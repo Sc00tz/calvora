@@ -1,0 +1,140 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── FullCalendar overrides ─────────────────────────────────────── */
+
+/* Fill its container */
+.fc { height: 100%; font-family: inherit; }
+
+/* Title */
+.fc .fc-toolbar-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+/* Toolbar layout */
+.fc .fc-toolbar.fc-header-toolbar {
+  margin-bottom: 1rem;
+  align-items: center;
+}
+
+/* All buttons reset */
+.fc .fc-button {
+  background: white !important;
+  color: #374151 !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 0.5rem !important;
+  box-shadow: none !important;
+  font-size: 0.8125rem !important;
+  font-weight: 500 !important;
+  padding: 0.35rem 0.75rem !important;
+  transition: background 0.15s, color 0.15s !important;
+}
+.fc .fc-button:hover {
+  background: #f9fafb !important;
+  color: #111827 !important;
+}
+.fc .fc-button:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 2px #3b82f6 !important;
+}
+
+/* Active view button */
+.fc .fc-button-active {
+  background: #2563eb !important;
+  color: white !important;
+  border-color: #2563eb !important;
+}
+.fc .fc-button-active:hover {
+  background: #1d4ed8 !important;
+}
+
+/* Button groups (prev/next share borders) */
+.fc .fc-button-group .fc-button {
+  border-radius: 0 !important;
+}
+.fc .fc-button-group .fc-button:first-child {
+  border-radius: 0.5rem 0 0 0.5rem !important;
+}
+.fc .fc-button-group .fc-button:last-child {
+  border-radius: 0 0.5rem 0.5rem 0 !important;
+}
+
+/* Today button standalone */
+.fc .fc-today-button {
+  border-radius: 0.5rem !important;
+}
+.fc .fc-today-button:disabled {
+  opacity: 0.4 !important;
+}
+
+/* Column headers (Mon, Tue …) */
+.fc .fc-col-header-cell-cushion {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 6px 4px;
+}
+
+/* Today highlight */
+.fc .fc-day-today {
+  background: #eff6ff !important;
+}
+.fc .fc-day-today .fc-daygrid-day-number {
+  background: #2563eb;
+  color: white;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+/* Day numbers */
+.fc .fc-daygrid-day-number {
+  font-size: 0.8125rem;
+  color: #374151;
+  padding: 4px 6px;
+}
+
+/* Events */
+.fc .fc-daygrid-event,
+.fc .fc-timegrid-event {
+  border-radius: 4px !important;
+  border: none !important;
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
+  cursor: pointer;
+}
+.fc .fc-daygrid-event:hover,
+.fc .fc-timegrid-event:hover {
+  filter: brightness(0.9);
+}
+
+/* Time axis */
+.fc .fc-timegrid-slot-label-cushion {
+  font-size: 0.7rem;
+  color: #9ca3af;
+}
+
+/* Now indicator */
+.fc .fc-timegrid-now-indicator-line {
+  border-color: #ef4444;
+}
+.fc .fc-timegrid-now-indicator-arrow {
+  border-top-color: #ef4444;
+  border-bottom-color: #ef4444;
+}
+
+/* More link */
+.fc .fc-more-link {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+}

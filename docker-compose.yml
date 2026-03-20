@@ -1,0 +1,32 @@
+name: "calvora"
+
+services:
+  calvora:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: calvora
+    restart: unless-stopped
+    ports:
+      - "8092:3000"
+    environment:
+      - DAVIS_BASE_URL=http://davis:9000/dav
+      - SESSION_SECRET=REPLACE_WITH_RANDOM_32_CHAR_STRING
+      - PORT=3000
+      - NODE_ENV=production
+      - SESSION_PATH=/app/sessions
+      # Public URL shown in the DAVx5 setup guide — set this to your server's
+      # externally reachable address (the same IP/hostname you use to open this app).
+      # DAVx5 will auto-discover CalDAV & CardDAV via /.well-known/ on this host.
+      - DAVX5_SERVER_URL=http://YOUR_SERVER_IP:8091
+    volumes:
+      - calendar-sessions:/app/sessions
+    networks:
+      - database-network
+
+volumes:
+  calendar-sessions:
+
+networks:
+  database-network:
+    external: true
