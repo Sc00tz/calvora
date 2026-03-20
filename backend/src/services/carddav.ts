@@ -215,11 +215,7 @@ export async function deleteContact(
 ): Promise<void> {
   const client = await createCardClient(username, password, baseUrl);
 
-  // Clean up groups before deleting the contact
-  const vCards = await client.fetchVCards({ vCard: { url: contactUrl } });
-  // Wait, we don't have uid easily unless we parse it. It's safer to just let the client delete the contact.
-  // Orphaned X-ADDRESSBOOKSERVER-MEMBER tags inside group vCards are safely ignored by DAVx5 anyway.
-
+  // Orphaned X-ADDRESSBOOKSERVER-MEMBER tags inside group vCards are safely ignored by DAVx5.
   await client.deleteVCard({ vCard: { url: contactUrl, etag } });
 }
 
