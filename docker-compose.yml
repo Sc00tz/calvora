@@ -13,10 +13,11 @@ services:
       - PORT=3000
       - NODE_ENV=production
       - SESSION_PATH=/app/sessions
-      # Public URL shown in the DAVx5 setup guide — set this to your server's
-      # externally reachable address (the same IP/hostname you use to open this app).
-      # DAVx5 will auto-discover CalDAV & CardDAV via /.well-known/ on this host.
-      - DAVX5_SERVER_URL=http://YOUR_SERVER_IP:8091
+      # Public URL of your Davis server — shown in the DAVx5 setup guide.
+      # This should point to Davis (not Calvora). Recommended setup:
+      #   calendar.yourdomain.com  →  Calvora (this service, port 8092)
+      #   dav.yourdomain.com       →  Davis   (port 8091)
+      - DAVX5_SERVER_URL=https://dav.yourdomain.com
       # Set to 'false' if accessing over plain HTTP without a reverse proxy in front
       # - COOKIE_SECURE=false
     volumes:
