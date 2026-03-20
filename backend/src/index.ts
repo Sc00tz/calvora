@@ -21,6 +21,10 @@ const PORT = parseInt(process.env.PORT || '3000', 10);
 const SESSION_SECRET = process.env.SESSION_SECRET || 'change-me-in-production';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
+// Trust the first proxy (Nginx Proxy Manager) so req.secure reflects the
+// original protocol and Set-Cookie: Secure works correctly behind HTTPS termination.
+app.set('trust proxy', 1);
+
 // CORS — allow frontend dev server and same-origin prod
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
@@ -41,7 +45,9 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
-    secure: NODE_ENV === 'production',
+    // COOKIE_SECURE defaults to true in production. Set to 'false' if accessing
+    // over plain HTTP without a reverse proxy (e.g. direct http://host:8092 access).
+    secure: process.env.COOKIE_SECURE !== 'false' && NODE_ENV === 'production',
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   },
 }));

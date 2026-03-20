@@ -17,6 +17,8 @@ services:
       # externally reachable address (the same IP/hostname you use to open this app).
       # DAVx5 will auto-discover CalDAV & CardDAV via /.well-known/ on this host.
       - DAVX5_SERVER_URL=http://YOUR_SERVER_IP:8091
+      # Set to 'false' if accessing over plain HTTP without a reverse proxy in front
+      # - COOKIE_SECURE=false
     volumes:
       - calendar-sessions:/app/sessions
     networks:
