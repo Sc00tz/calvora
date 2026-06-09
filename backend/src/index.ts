@@ -18,8 +18,20 @@ const FileStore = FileStoreFactory(session);
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
-const SESSION_SECRET = process.env.SESSION_SECRET || 'change-me-in-production';
 const NODE_ENV = process.env.NODE_ENV || 'development';
+
+const DEFAULT_SECRET = 'change-me-in-production';
+const SESSION_SECRET = process.env.SESSION_SECRET || DEFAULT_SECRET;
+
+// In production, refuse to start with a missing or placeholder secret — running with a
+// well-known secret lets anyone forge session cookies. Fail loudly instead of booting insecurely.
+if (NODE_ENV === 'production' && (SESSION_SECRET === DEFAULT_SECRET || SESSION_SECRET.length < 16)) {
+  console.error(
+    'FATAL: SESSION_SECRET must be set to a unique random value (>=16 chars) in production. ' +
+    'Generate one with: openssl rand -hex 32'
+  );
+  process.exit(1);
+}
 
 // Trust the first proxy (Nginx Proxy Manager) so req.secure reflects the
 // original protocol and Set-Cookie: Secure works correctly behind HTTPS termination.
@@ -75,8 +87,13 @@ app.get('/api/help/config', (_req, res) => {
 if (NODE_ENV === 'production') {
   const staticDir = path.join(__dirname, 'public');
   app.use(express.static(staticDir));
-  // SPA fallback — all non-API routes return index.html
-  app.get('*', (_req, res) => {
+  // SPA fallback — all non-API routes return index.html. Unmatched /api routes
+  // fall through to a JSON 404 instead of silently serving the HTML shell.
+  app.get('*', (req, res) => {
+    if (req.path.startsWith('/api/')) {
+      res.status(404).json({ error: 'Not found' });
+      return;
+    }
     res.sendFile(path.join(staticDir, 'index.html'));
   });
 }

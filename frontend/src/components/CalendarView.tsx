@@ -12,6 +12,7 @@ import type { CalendarInfo, CalendarEvent, CalendarTask, Contact, UpdateEventBod
 interface CalendarHandle {
   refetchEvents: () => void
   navigateTo: (date: Date) => void
+  addOptimisticEvent: (event: CalendarEvent) => void
 }
 
 interface Props {
@@ -28,6 +29,11 @@ export default function CalendarView({ visibleCalendars, birthdayContacts, onCli
   const fcRef = useRef<FullCalendar>(null)
   const eventMapRef = useRef<Map<string, CalendarEvent>>(new Map())
   const taskMapRef = useRef<Map<string, CalendarTask>>(new Map())
+  // Just-created events held client-side until the server starts returning them.
+  // Davis/SabreDAV can lag a beat between our PUT and indexing the new object, so a
+  // refetch fired immediately after create may not include it yet. We render these
+  // optimistically and prune each one once it shows up in a server response.
+  const optimisticRef = useRef<Map<string, CalendarEvent>>(new Map())
   const [fcEvents, setFcEvents] = useState<EventInput[]>([])
   const [dateRange, setDateRange] = useState<{ start: Date; end: Date } | null>(null)
 
@@ -218,8 +224,25 @@ export default function CalendarView({ visibleCalendars, birthdayContacts, onCli
       eventMapRef.current.clear()
       taskMapRef.current.clear()
 
+      const nativeFlat = nativeResults.flat()
+
+      // Prune optimistic events the server now returns (matched by uid), then carry
+      // forward any that are still missing but fall within the current view range.
+      const serverUids = new Set(nativeFlat.map(({ event }) => event.uid))
+      const pendingOptimistic: { event: CalendarEvent; cal: CalendarInfo; isExternal: boolean }[] = []
+      for (const [uid, e] of optimisticRef.current) {
+        if (serverUids.has(uid)) { optimisticRef.current.delete(uid); continue }
+        const cal = calendars.find((c) => c.url === e.calendarUrl)
+        if (!cal) continue
+        const evStart = new Date(e.start)
+        if (evStart >= start && evStart <= end) {
+          pendingOptimistic.push({ event: e, cal, isExternal: false })
+        }
+      }
+
       const allEventResults = [
-        ...nativeResults.flat(),
+        ...nativeFlat,
+        ...pendingOptimistic,
         ...externalResults.flat(),
         ...virtualBirthdayResults
       ]
@@ -279,6 +302,10 @@ export default function CalendarView({ visibleCalendars, birthdayContacts, onCli
     calendarRef.current = {
       refetchEvents: () => dateRange && loadEvents(dateRange.start, dateRange.end, visibleCalendars),
       navigateTo: (date: Date) => fcRef.current?.getApi().gotoDate(date),
+      addOptimisticEvent: (event: CalendarEvent) => {
+        optimisticRef.current.set(event.uid, event)
+        if (dateRange) loadEvents(dateRange.start, dateRange.end, visibleCalendars)
+      },
     }
   })
 

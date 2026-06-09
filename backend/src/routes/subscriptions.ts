@@ -3,6 +3,8 @@ import { Router, Request, Response } from 'express';
 import { requireSession } from '../middleware/session.js';
 import fs from 'fs/promises';
 import path from 'path';
+import dns from 'dns/promises';
+import net from 'net';
 import { v4 as uuidv4 } from 'uuid';
 
 
@@ -72,6 +74,61 @@ router.delete('/:id', requireSession, async (req: Request, res: Response) => {
   res.json({ ok: true });
 });
 
+// Returns true if `ip` falls in a range we must never let the proxy reach:
+// loopback, private (RFC 1918), link-local (incl. cloud metadata 169.254.0.0/16),
+// and the IPv6 equivalents. Blocks SSRF pivots into the Docker network / metadata service.
+function isBlockedAddress(ip: string): boolean {
+  const type = net.isIP(ip);
+  if (type === 4) {
+    const [a, b] = ip.split('.').map(Number);
+    if (a === 0 || a === 10 || a === 127) return true;          // this-host, private, loopback
+    if (a === 172 && b >= 16 && b <= 31) return true;           // private
+    if (a === 192 && b === 168) return true;                    // private
+    if (a === 169 && b === 254) return true;                    // link-local / cloud metadata
+    if (a === 100 && b >= 64 && b <= 127) return true;          // CGNAT (RFC 6598)
+    if (a >= 224) return true;                                  // multicast / reserved
+    return false;
+  }
+  if (type === 6) {
+    const v = ip.toLowerCase().split('%')[0];                   // strip zone id
+    if (v === '::1' || v === '::') return true;                 // loopback / unspecified
+    if (v.startsWith('fe80')) return true;                      // link-local
+    if (v.startsWith('fc') || v.startsWith('fd')) return true;  // unique local
+    // IPv4-mapped (::ffff:a.b.c.d) — re-check the embedded v4 address
+    const mapped = v.match(/::ffff:(\d+\.\d+\.\d+\.\d+)$/);
+    if (mapped) return isBlockedAddress(mapped[1]);
+    return false;
+  }
+  return true; // not a valid IP literal — reject
+}
+
+// Validates an external URL is safe for the proxy to fetch: http(s) only, and every
+// address the hostname resolves to is publicly routable. Throws on rejection.
+async function assertSafeProxyUrl(rawUrl: string): Promise<void> {
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    throw new Error('Invalid URL');
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new Error('Only http and https URLs are allowed');
+  }
+
+  const host = parsed.hostname;
+  // If the host is already an IP literal, check it directly.
+  if (net.isIP(host)) {
+    if (isBlockedAddress(host)) throw new Error('URL resolves to a blocked address');
+    return;
+  }
+
+  const resolved = await dns.lookup(host, { all: true });
+  if (resolved.length === 0) throw new Error('Host did not resolve');
+  for (const { address } of resolved) {
+    if (isBlockedAddress(address)) throw new Error('URL resolves to a blocked address');
+  }
+}
+
 // GET /api/subscriptions/proxy?url=...
 router.get('/proxy', requireSession, async (req: Request, res: Response) => {
   const { url } = req.query;
@@ -80,7 +137,17 @@ router.get('/proxy', requireSession, async (req: Request, res: Response) => {
   }
 
   try {
-    const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    await assertSafeProxyUrl(url);
+  } catch (err: any) {
+    console.warn('Rejected proxy URL:', url, err.message);
+    return res.status(400).json({ error: 'URL is not allowed' });
+  }
+
+  try {
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout(5000),
+      redirect: 'error', // don't follow redirects — they could bounce to a blocked address
+    });
     if (!response.ok) throw new Error(`External server responded with ${response.status}`);
     const data = await response.text();
     res.setHeader('Content-Type', 'text/calendar');

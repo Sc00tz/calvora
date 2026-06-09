@@ -42,6 +42,7 @@ type ContactModalState =
 interface CalendarHandle {
   refetchEvents: () => void
   navigateTo: (date: Date) => void
+  addOptimisticEvent: (event: CalendarEvent) => void
 }
 
 export default function CalendarApp({ user, onLogout }: Props) {
@@ -96,8 +97,13 @@ export default function CalendarApp({ user, onLogout }: Props) {
 
   // ── Event handlers ──────────────────────────────────────────────────────────
   const handleSaveEvent = useCallback(async (body: CreateEventBody | UpdateEventBody, isNew: boolean) => {
-    if (isNew) await createEvent(body as CreateEventBody)
-    else { const b = body as UpdateEventBody; await updateEvent(b.uid, b) }
+    if (isNew) {
+      const created = await createEvent(body as CreateEventBody)
+      // Show it immediately — the refetch below reconciles once Davis has indexed it.
+      calendarRef.current?.addOptimisticEvent(created)
+    } else {
+      const b = body as UpdateEventBody; await updateEvent(b.uid, b)
+    }
     calendarRef.current?.refetchEvents()
   }, [])
 

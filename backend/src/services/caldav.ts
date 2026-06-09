@@ -341,7 +341,8 @@ function truncateRruleUntil(masterVevent: ICAL.Component, untilTime: ICAL.Time):
   const untilStr = untilTime.isDate
     ? untilTime.toString().replace(/-/g, '')              // "20240314"
     : untilTime.toJSDate().toISOString()
-        .replace(/[-:]/g, '').replace('.000', '') + 'Z'; // "20240314T235959Z"
+        .replace(/[-:]/g, '')                             // strip separators
+        .replace(/\.\d+Z$/, 'Z');                         // drop milliseconds → "20240314T235959Z"
   parts.push(`UNTIL=${untilStr}`);
   rruleProp.setValue(ICAL.Recur.fromString(parts.join(';')));
 }
