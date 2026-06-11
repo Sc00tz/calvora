@@ -70,7 +70,7 @@ export default function Sidebar({
   const onCreate = activeTab === 'tasks' ? onCreateTask : activeTab === 'contacts' ? onCreateContact : onCreateEvent
 
   return (
-    <aside className="w-60 flex-shrink-0 bg-white border-r border-gray-100 flex flex-col select-none">
+    <aside className="w-60 flex-shrink-0 bg-white border-r border-gray-100 flex flex-col select-none no-print">
       {/* Tab bar — icon only, title tooltip */}
       <div className="px-4 pt-4 pb-3">
         <div className="flex items-center gap-1 mb-3 bg-gray-100 rounded-xl p-1">

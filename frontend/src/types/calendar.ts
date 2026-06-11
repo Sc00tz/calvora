@@ -89,6 +89,20 @@ export interface User {
   username: string
 }
 
+export type CalendarViewName = 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay' | 'listMonth'
+
+// Imperative handle the parent uses to drive the calendar (also targeted by keyboard shortcuts).
+export interface CalendarHandle {
+  refetchEvents: () => void
+  navigateTo: (date: Date) => void
+  addOptimisticEvent: (event: CalendarEvent) => void
+  changeView: (view: CalendarViewName) => void
+  gotoToday: () => void
+  gotoPrev: () => void
+  gotoNext: () => void
+  focusSearch: () => void
+}
+
 export interface AddressBook {
   id: string
   url: string

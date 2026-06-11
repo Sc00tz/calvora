@@ -138,3 +138,35 @@
   color: #6b7280;
   font-weight: 500;
 }
+
+/* ─── Print styles ───────────────────────────────────────────────── */
+
+@media print {
+  /* Hide app chrome that shouldn't appear on paper */
+  .no-print { display: none !important; }
+
+  /* Hide the calendar's interactive toolbar buttons, but keep the title */
+  .fc .fc-toolbar .fc-toolbar-chunk:first-child,
+  .fc .fc-toolbar .fc-toolbar-chunk:last-child {
+    display: none !important;
+  }
+  .fc .fc-toolbar-title { font-size: 1.3rem; }
+
+  /* Let the layout flow to natural height instead of the fixed app viewport */
+  html, body, #root { height: auto !important; overflow: visible !important; }
+  .fc { height: auto !important; }
+
+  /* Force event colors to render (browsers strip backgrounds by default) */
+  .fc .fc-daygrid-event,
+  .fc .fc-timegrid-event,
+  .fc .fc-list-event {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Avoid splitting a day cell or list row across pages where possible */
+  .fc .fc-daygrid-day,
+  .fc .fc-list-event { break-inside: avoid; }
+
+  @page { margin: 1cm; }
+}

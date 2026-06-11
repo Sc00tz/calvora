@@ -8,10 +8,13 @@ interface Props {
   defaultStart?: Date
   defaultEnd?: Date
   defaultAllDay?: boolean
+  prefill?: Partial<CreateEventBody>
   editScope?: 'all' | 'this' | 'following'
   calendars: CalendarInfo[]
   onSave: (body: CreateEventBody | UpdateEventBody, isNew: boolean) => Promise<void>
   onDelete?: (event: CalendarEvent, editScope?: 'all' | 'this' | 'following') => Promise<void>
+  onDuplicate?: (event: CalendarEvent) => void
+  onCopy?: (event: CalendarEvent) => void
   onClose: () => void
 }
 
@@ -35,7 +38,7 @@ function toDateValue(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }
 
-export default function EventModal({ event, defaultStart, defaultEnd, defaultAllDay = false, editScope, calendars, onSave, onDelete, onClose }: Props) {
+export default function EventModal({ event, defaultStart, defaultEnd, defaultAllDay = false, prefill, editScope, calendars, onSave, onDelete, onDuplicate, onCopy, onClose }: Props) {
   const isNew = event === null
   const writableCalendars = calendars.filter((c) => c.canWrite)
 
@@ -82,7 +85,13 @@ export default function EventModal({ event, defaultStart, defaultEnd, defaultAll
       setAllDay(defaultAllDay)
       setStart(defaultAllDay ? toDateValue(s) : toLocalDatetimeValue(s))
       setEnd(defaultAllDay ? toDateValue(e) : toLocalDatetimeValue(e))
-      setCalendarUrl(writableCalendars[0]?.url ?? '')
+      // Apply duplicate/prefill values when present, else fall back to the first calendar.
+      setTitle(prefill?.title ?? '')
+      setDescription(prefill?.description ?? '')
+      setLocation(prefill?.location ?? '')
+      setRrule(prefill?.rrule ?? '')
+      setReminder(prefill?.reminder !== undefined ? String(prefill.reminder) : '')
+      setCalendarUrl(prefill?.calendarUrl ?? writableCalendars[0]?.url ?? '')
     }
   }, [event]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -281,6 +290,20 @@ export default function EventModal({ event, defaultStart, defaultEnd, defaultAll
               className="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors">
               {saving ? 'Saving…' : 'Save'}
             </button>
+            {!isNew && onCopy && event && (
+              <button type="button" title="Copy event (paste with Ctrl/Cmd-V on a date)"
+                onClick={() => { onCopy(event); onClose() }}
+                className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors">
+                Copy
+              </button>
+            )}
+            {!isNew && onDuplicate && event && (
+              <button type="button" title="Duplicate event"
+                onClick={() => { onDuplicate(event); onClose() }}
+                className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors">
+                Duplicate
+              </button>
+            )}
             {!isNew && onDelete && (
               confirmDelete ? (
                 <button type="button" disabled={deleting} onClick={handleDelete}

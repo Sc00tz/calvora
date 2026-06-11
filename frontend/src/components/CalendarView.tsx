@@ -3,17 +3,13 @@ import { useRef, useEffect, useState, useCallback, MutableRefObject } from 'reac
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
+import listPlugin from '@fullcalendar/list'
 import interactionPlugin, { DateClickArg, EventResizeDoneArg } from '@fullcalendar/interaction'
 import type { EventDropArg } from '@fullcalendar/core'
 import type { EventClickArg, EventInput, DatesSetArg } from '@fullcalendar/core'
 import { getEvents, getTasks, updateEvent, searchEvents } from '../api/client'
-import type { CalendarInfo, CalendarEvent, CalendarTask, Contact, UpdateEventBody } from '../types/calendar'
-
-interface CalendarHandle {
-  refetchEvents: () => void
-  navigateTo: (date: Date) => void
-  addOptimisticEvent: (event: CalendarEvent) => void
-}
+import PrintDialog from './PrintDialog'
+import type { CalendarInfo, CalendarEvent, CalendarTask, Contact, UpdateEventBody, CalendarHandle, CalendarViewName } from '../types/calendar'
 
 interface Props {
   visibleCalendars: CalendarInfo[]
@@ -22,10 +18,11 @@ interface Props {
   onClickEvent: (event: CalendarEvent) => void
   onClickTask: (task: CalendarTask) => void
   onDatesChange: (date: Date) => void
+  onPushUndo: (label: string, undo: () => Promise<void>) => void
   calendarRef: MutableRefObject<CalendarHandle | null>
 }
 
-export default function CalendarView({ visibleCalendars, birthdayContacts, onClickSlot, onClickEvent, onClickTask, onDatesChange, calendarRef }: Props) {
+export default function CalendarView({ visibleCalendars, birthdayContacts, onClickSlot, onClickEvent, onClickTask, onDatesChange, onPushUndo, calendarRef }: Props) {
   const fcRef = useRef<FullCalendar>(null)
   const eventMapRef = useRef<Map<string, CalendarEvent>>(new Map())
   const taskMapRef = useRef<Map<string, CalendarTask>>(new Map())
@@ -36,6 +33,32 @@ export default function CalendarView({ visibleCalendars, birthdayContacts, onCli
   const optimisticRef = useRef<Map<string, CalendarEvent>>(new Map())
   const [fcEvents, setFcEvents] = useState<EventInput[]>([])
   const [dateRange, setDateRange] = useState<{ start: Date; end: Date } | null>(null)
+  const [printDialogOpen, setPrintDialogOpen] = useState(false)
+
+  // Print orchestration. For "agenda" we temporarily switch FullCalendar to the list
+  // view, print, then restore the original view. The print stylesheet (index.css)
+  // hides the sidebar/search/toolbar and lets the grid expand to its natural height.
+  const runPrint = useCallback((mode: 'grid' | 'agenda') => {
+    setPrintDialogOpen(false)
+    const api = fcRef.current?.getApi()
+    if (!api) { window.print(); return }
+
+    if (mode === 'agenda') {
+      const originalView = api.view.type
+      api.changeView('listMonth')
+      // Let the list view paint before opening the print dialog, then restore.
+      setTimeout(() => {
+        const restore = () => {
+          api.changeView(originalView)
+          window.removeEventListener('afterprint', restore)
+        }
+        window.addEventListener('afterprint', restore)
+        window.print()
+      }, 100)
+    } else {
+      window.print()
+    }
+  }, [])
 
   // ── Search state ──────────────────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState('')
@@ -43,6 +66,7 @@ export default function CalendarView({ visibleCalendars, birthdayContacts, onCli
   const [searchLoading, setSearchLoading] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const searchRef = useRef<HTMLDivElement>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Close dropdown on outside click
@@ -54,6 +78,19 @@ export default function CalendarView({ visibleCalendars, birthdayContacts, onCli
     }
     document.addEventListener('mousedown', onMouseDown)
     return () => document.removeEventListener('mousedown', onMouseDown)
+  }, [])
+
+  // Intercept Cmd/Ctrl-P so the native print shortcut opens our layout chooser
+  // instead of printing the raw page.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'p' || e.key === 'P')) {
+        e.preventDefault()
+        setPrintDialogOpen(true)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
   }, [])
 
   // Debounced search
@@ -306,6 +343,11 @@ export default function CalendarView({ visibleCalendars, birthdayContacts, onCli
         optimisticRef.current.set(event.uid, event)
         if (dateRange) loadEvents(dateRange.start, dateRange.end, visibleCalendars)
       },
+      changeView: (view: CalendarViewName) => fcRef.current?.getApi().changeView(view),
+      gotoToday: () => fcRef.current?.getApi().today(),
+      gotoPrev: () => fcRef.current?.getApi().prev(),
+      gotoNext: () => fcRef.current?.getApi().next(),
+      focusSearch: () => searchInputRef.current?.focus(),
     }
   })
 
@@ -366,6 +408,16 @@ export default function CalendarView({ visibleCalendars, birthdayContacts, onCli
     try {
       await updateEvent(event.uid, body)
       eventMapRef.current.set(event.uid, { ...event, start: newStart.toISOString(), end: newEnd.toISOString(), allDay: arg.event.allDay })
+      // Undo a move by writing the original start/end back. Skip recurring occurrences —
+      // moving one rewrites the master via RECURRENCE-ID, which has no clean single-step inverse.
+      if (!event.isOccurrence) {
+        const original = event
+        // etag omitted: undo is a deliberate force-write. Reusing the original (now stale)
+        // etag would trip If-Match 412 since the move above already bumped it.
+        onPushUndo('Event moved', async () => {
+          await updateEvent(original.uid, { ...body, start: original.start, end: original.end, allDay: original.allDay, etag: undefined })
+        })
+      }
     } catch (err) {
       console.error('Failed to move event:', err)
       arg.revert()
@@ -399,6 +451,12 @@ export default function CalendarView({ visibleCalendars, birthdayContacts, onCli
     try {
       await updateEvent(event.uid, body)
       eventMapRef.current.set(event.uid, { ...event, start: arg.event.start.toISOString(), end: arg.event.end.toISOString() })
+      if (!event.isOccurrence) {
+        const original = event
+        onPushUndo('Event resized', async () => {
+          await updateEvent(original.uid, { ...body, start: original.start, end: original.end, allDay: original.allDay, etag: undefined })
+        })
+      }
     } catch (err) {
       console.error('Failed to resize event:', err)
       arg.revert()
@@ -408,12 +466,13 @@ export default function CalendarView({ visibleCalendars, birthdayContacts, onCli
   return (
     <div className="flex-1 min-h-0 flex flex-col">
       {/* Search bar */}
-      <div className="px-5 pt-4 pb-2 flex-shrink-0" ref={searchRef}>
+      <div className="px-5 pt-4 pb-2 flex-shrink-0 no-print" ref={searchRef}>
         <div className="relative max-w-sm">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
           </svg>
           <input
+            ref={searchInputRef}
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -479,14 +538,21 @@ export default function CalendarView({ visibleCalendars, birthdayContacts, onCli
       <div className="flex-1 min-h-0 px-5 pb-5">
         <FullCalendar
           ref={fcRef}
-          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+          plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
           initialView="dayGridMonth"
           headerToolbar={{
             left: 'prev,next today',
             center: 'title',
-            right: 'dayGridMonth,timeGridWeek,timeGridDay',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth printBtn',
           }}
-          buttonText={{ today: 'Today', month: 'Month', week: 'Week', day: 'Day' }}
+          customButtons={{
+            printBtn: { text: 'Print', click: () => setPrintDialogOpen(true) },
+          }}
+          buttonText={{ today: 'Today', month: 'Month', week: 'Week', day: 'Day', list: 'Agenda' }}
+          views={{
+            listMonth: { buttonText: 'Agenda' },
+          }}
+          noEventsContent="No events to display"
           height="100%"
           navLinks={true}
           navLinkDayClick={(date) => fcRef.current?.getApi().changeView('timeGridDay', date)}
@@ -504,6 +570,10 @@ export default function CalendarView({ visibleCalendars, birthdayContacts, onCli
           scrollTime="08:00:00"
         />
       </div>
+
+      {printDialogOpen && (
+        <PrintDialog onChoose={runPrint} onClose={() => setPrintDialogOpen(false)} />
+      )}
     </div>
   )
 }

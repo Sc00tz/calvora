@@ -13,9 +13,13 @@ import ContactModal from './ContactModal'
 import SubscriptionModal from './SubscriptionModal'
 import HelpModal from './HelpModal'
 import RecurrenceDialog from './RecurrenceDialog'
+import ShortcutsHelp from './ShortcutsHelp'
+import UndoToast from './UndoToast'
 import { useNotifications } from '../hooks/useNotifications'
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
+import { useUndo } from '../hooks/useUndo'
 import { deleteSubscription, getAllContacts } from '../api/client'
-import type { User, CalendarEvent, CalendarInfo, CreateEventBody, UpdateEventBody, CalendarTask, CreateTaskBody, UpdateTaskBody, Contact, AddressBook, CreateContactBody, UpdateContactBody } from '../types/calendar'
+import type { User, CalendarEvent, CalendarInfo, CreateEventBody, UpdateEventBody, CalendarTask, CreateTaskBody, UpdateTaskBody, Contact, AddressBook, CreateContactBody, UpdateContactBody, CalendarHandle } from '../types/calendar'
 
 
 interface Props {
@@ -25,7 +29,7 @@ interface Props {
 
 type EventModalState =
   | { mode: 'closed' }
-  | { mode: 'create'; start: Date; end: Date; allDay: boolean }
+  | { mode: 'create'; start: Date; end: Date; allDay: boolean; prefill?: Partial<CreateEventBody> }
   | { mode: 'recurring-choice'; event: CalendarEvent }
   | { mode: 'edit'; event: CalendarEvent; editScope?: 'all' | 'this' | 'following' }
 
@@ -39,12 +43,6 @@ type ContactModalState =
   | { mode: 'create'; defaultAddressBookUrl?: string }
   | { mode: 'edit'; contact: Contact }
 
-interface CalendarHandle {
-  refetchEvents: () => void
-  navigateTo: (date: Date) => void
-  addOptimisticEvent: (event: CalendarEvent) => void
-}
-
 export default function CalendarApp({ user, onLogout }: Props) {
   const { calendars, loading: calendarsLoading, refetch: refetchCalendars } = useCalendars()
   const [activeTab, setActiveTab] = useState<ActiveTab>('calendar')
@@ -53,6 +51,7 @@ export default function CalendarApp({ user, onLogout }: Props) {
   const [contactModal, setContactModal] = useState<ContactModalState>({ mode: 'closed' })
   const [visibleCalendarIds, setVisibleCalendarIds] = useState<Set<string>>(new Set())
   const [helpOpen, setHelpOpen] = useState(false)
+  const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false)
   const [subscriptionModalOpen, setSubscriptionModalOpen] = useState(false)
   const [focusedDate, setFocusedDate] = useState(new Date())
 
@@ -61,8 +60,20 @@ export default function CalendarApp({ user, onLogout }: Props) {
   const calendarRef      = useRef<CalendarHandle | null>(null)
   const tasksViewRefetch = useRef<(() => void) | null>(null)
   const contactsRefetch  = useRef<(() => void) | null>(null)
+  // Pre-edit snapshot of the event being edited, captured at modal-open, used to build the undo inverse.
+  const editSnapshotRef  = useRef<CalendarEvent | null>(null)
+  // In-app clipboard for copy/paste of events (not the OS clipboard).
+  const eventClipboardRef = useRef<CalendarEvent | null>(null)
+  // The most recently opened event — the implicit source for Ctrl/Cmd-C.
+  const lastFocusedEventRef = useRef<CalendarEvent | null>(null)
 
   useNotifications(calendars, visibleCalendarIds)
+
+  // Undo: refresh whatever view is active after an inverse op completes.
+  const { toast: undoToast, pushUndo, runUndo, dismiss: dismissUndo } = useUndo(() => {
+    calendarRef.current?.refetchEvents()
+    tasksViewRefetch.current?.()
+  })
 
   useEffect(() => {
     if (calendars.length > 0) setVisibleCalendarIds(new Set(calendars.map((c) => c.id)))
@@ -101,24 +112,130 @@ export default function CalendarApp({ user, onLogout }: Props) {
       const created = await createEvent(body as CreateEventBody)
       // Show it immediately — the refetch below reconciles once Davis has indexed it.
       calendarRef.current?.addOptimisticEvent(created)
+      // Undo a create by deleting the just-created object.
+      pushUndo({
+        label: 'Event created',
+        undo: () => deleteEvent(created.uid, created.url, created.etag, 'all'),
+      })
     } else {
-      const b = body as UpdateEventBody; await updateEvent(b.uid, b)
+      const b = body as UpdateEventBody
+      const prior = editSnapshotRef.current
+      await updateEvent(b.uid, b)
+      // Undo a simple edit by restoring the pre-edit field values (force-write, no etag).
+      // Only for non-recurring, non-occurrence events — series edits have ambiguous inverses.
+      if (prior && prior.uid === b.uid && !prior.isOccurrence && !b.editScope) {
+        pushUndo({
+          label: 'Event updated',
+          undo: async () => {
+            await updateEvent(prior.uid, {
+              uid: prior.uid,
+              eventUrl: prior.url,
+              calendarUrl: prior.calendarUrl,
+              title: prior.title,
+              start: prior.start,
+              end: prior.end,
+              allDay: prior.allDay,
+              description: prior.description,
+              location: prior.location,
+              rrule: prior.rrule,
+              reminder: prior.reminder,
+              etag: undefined,
+            })
+          },
+        })
+      }
     }
     calendarRef.current?.refetchEvents()
-  }, [])
+  }, [pushUndo])
 
   const handleDeleteEvent = useCallback(async (event: CalendarEvent, editScope?: 'all' | 'this' | 'following') => {
     const scope = editScope ?? (event.isOccurrence ? 'this' : 'all')
     await deleteEvent(event.uid, event.url, event.etag, scope, event.occurrenceStart)
+    // Offer undo only for whole non-recurring deletes — re-creating the event reverses it.
+    // Recurring-occurrence deletes mutate the master .ics (EXDATE), which has no clean inverse.
+    if (scope === 'all' && !event.isOccurrence && !event.rrule) {
+      pushUndo({
+        label: 'Event deleted',
+        undo: async () => {
+          await createEvent({
+            calendarUrl: event.calendarUrl,
+            title: event.title,
+            start: event.start,
+            end: event.end,
+            allDay: event.allDay,
+            description: event.description,
+            location: event.location,
+            reminder: event.reminder,
+          })
+        },
+      })
+    }
     calendarRef.current?.refetchEvents()
-  }, [])
+  }, [pushUndo])
 
   const handleClickEvent = useCallback((event: CalendarEvent) => {
+    lastFocusedEventRef.current = event  // implicit source for Ctrl/Cmd-C
     if (event.isOccurrence) {
       setEventModal({ mode: 'recurring-choice', event })
     } else {
+      editSnapshotRef.current = event  // capture pre-edit state for undo
       setEventModal({ mode: 'edit', event })
     }
+  }, [])
+
+  // ── Copy / paste ─────────────────────────────────────────────────────────────
+  const handleCopyEvent = useCallback(() => {
+    const src = lastFocusedEventRef.current
+    if (src) eventClipboardRef.current = src
+  }, [])
+
+  // Paste a copied event onto the focused date, keeping its original time-of-day and duration.
+  const handlePasteEvent = useCallback(async () => {
+    const src = eventClipboardRef.current
+    if (!src) return
+    const origStart = new Date(src.start)
+    const durationMs = new Date(src.end).getTime() - origStart.getTime()
+    const newStart = new Date(focusedDate)
+    if (!src.allDay) {
+      newStart.setHours(origStart.getHours(), origStart.getMinutes(), 0, 0)
+    } else {
+      newStart.setHours(0, 0, 0, 0)
+    }
+    const newEnd = new Date(newStart.getTime() + (durationMs > 0 ? durationMs : 3600000))
+    const body: CreateEventBody = {
+      calendarUrl: src.calendarUrl,
+      title: src.title,
+      start: src.allDay ? newStart.toISOString().slice(0, 10) : newStart.toISOString(),
+      end: src.allDay ? newEnd.toISOString().slice(0, 10) : newEnd.toISOString(),
+      allDay: src.allDay,
+      description: src.description,
+      location: src.location,
+      reminder: src.reminder,
+    }
+    const created = await createEvent(body)
+    calendarRef.current?.addOptimisticEvent(created)
+    calendarRef.current?.refetchEvents()
+    pushUndo({ label: 'Event pasted', undo: () => deleteEvent(created.uid, created.url, created.etag, 'all') })
+  }, [focusedDate, pushUndo])
+
+  // Duplicate: open a fresh create modal pre-filled from an existing event.
+  const handleDuplicateEvent = useCallback((event: CalendarEvent) => {
+    const start = new Date(event.start)
+    const end = new Date(event.end)
+    setEventModal({
+      mode: 'create',
+      start,
+      end,
+      allDay: event.allDay,
+      prefill: {
+        title: `${event.title} (copy)`,
+        description: event.description,
+        location: event.location,
+        rrule: event.rrule,
+        reminder: event.reminder,
+        calendarUrl: event.calendarUrl,
+      },
+    })
   }, [])
 
   const handleColorChange = useCallback((_cal: CalendarInfo, _color: string) => {
@@ -158,6 +275,58 @@ export default function CalendarApp({ user, onLogout }: Props) {
     refetchCalendars()
   }, [refetchCalendars])
 
+  // ── Create actions (shared by sidebar buttons and the "c" shortcut) ──────────
+  const handleCreateEvent = useCallback(() => {
+    const now = new Date()
+    setEventModal({ mode: 'create', start: now, end: new Date(now.getTime() + 3600000), allDay: false })
+  }, [])
+  const handleCreateTask = useCallback(() => setTaskModal({ mode: 'create' }), [])
+  const handleCreateContact = useCallback(
+    () => setContactModal({ mode: 'create', defaultAddressBookUrl: addressBooks[0]?.url }),
+    [addressBooks]
+  )
+
+  // ── Keyboard shortcuts ───────────────────────────────────────────────────────
+  // "Create" is context-aware: it opens the modal matching the active tab.
+  const anyOverlayOpen =
+    eventModal.mode !== 'closed' || taskModal.mode !== 'closed' ||
+    contactModal.mode !== 'closed' || subscriptionModalOpen || helpOpen || shortcutsHelpOpen
+
+  const handleShortcutCreate = useCallback(() => {
+    if (anyOverlayOpen) return
+    if (activeTab === 'tasks') handleCreateTask()
+    else if (activeTab === 'contacts') handleCreateContact()
+    else handleCreateEvent()
+  }, [anyOverlayOpen, activeTab, handleCreateTask, handleCreateContact, handleCreateEvent])
+
+  const handleEscape = useCallback(() => {
+    if (shortcutsHelpOpen) setShortcutsHelpOpen(false)
+    else if (helpOpen) setHelpOpen(false)
+    else if (subscriptionModalOpen) setSubscriptionModalOpen(false)
+    else if (eventModal.mode !== 'closed') setEventModal({ mode: 'closed' })
+    else if (taskModal.mode !== 'closed') setTaskModal({ mode: 'closed' })
+    else if (contactModal.mode !== 'closed') setContactModal({ mode: 'closed' })
+  }, [shortcutsHelpOpen, helpOpen, subscriptionModalOpen, eventModal.mode, taskModal.mode, contactModal.mode])
+
+  useKeyboardShortcuts({
+    onCreate: handleShortcutCreate,
+    onToday: () => calendarRef.current?.gotoToday(),
+    onPrev: () => calendarRef.current?.gotoPrev(),
+    onNext: () => calendarRef.current?.gotoNext(),
+    onViewDay: () => calendarRef.current?.changeView('timeGridDay'),
+    onViewWeek: () => calendarRef.current?.changeView('timeGridWeek'),
+    onViewMonth: () => calendarRef.current?.changeView('dayGridMonth'),
+    onViewAgenda: () => calendarRef.current?.changeView('listMonth'),
+    onFocusSearch: () => { if (activeTab === 'calendar') calendarRef.current?.focusSearch() },
+    onShowHelp: () => { if (!anyOverlayOpen) setShortcutsHelpOpen(true) },
+    onEscape: handleEscape,
+    onUndo: runUndo,
+    onCopy: () => { if (activeTab === 'calendar') handleCopyEvent() },
+    onPaste: () => { if (activeTab === 'calendar') handlePasteEvent() },
+    // View-navigation keys (d/w/m/a, p/k/n/j) only apply on the calendar tab and when
+    // no overlay is open. The always-on keys (c, t, /, ?, Esc) carry their own guards.
+  }, activeTab === 'calendar' && !anyOverlayOpen)
+
 
   if (calendarsLoading) {
     return (
@@ -181,12 +350,9 @@ export default function CalendarApp({ user, onLogout }: Props) {
             onTabChange={setActiveTab}
             onToggleCalendar={handleToggleCalendar}
             onNavigate={handleMiniCalendarNavigate}
-            onCreateEvent={() => {
-              const now = new Date()
-              setEventModal({ mode: 'create', start: now, end: new Date(now.getTime() + 3600000), allDay: false })
-            }}
-            onCreateTask={() => setTaskModal({ mode: 'create' })}
-            onCreateContact={() => setContactModal({ mode: 'create', defaultAddressBookUrl: addressBooks[0]?.url })}
+            onCreateEvent={handleCreateEvent}
+            onCreateTask={handleCreateTask}
+            onCreateContact={handleCreateContact}
             onColorChange={handleColorChange}
             onAddSubscription={() => setSubscriptionModalOpen(true)}
             onDeleteSubscription={handleDeleteSubscription}
@@ -204,6 +370,7 @@ export default function CalendarApp({ user, onLogout }: Props) {
             onClickEvent={handleClickEvent}
             onClickTask={(task) => setTaskModal({ mode: 'edit', task })}
             onDatesChange={setFocusedDate}
+            onPushUndo={(label, undo) => pushUndo({ label, undo })}
             calendarRef={calendarRef}
           />
         )}
@@ -237,13 +404,16 @@ export default function CalendarApp({ user, onLogout }: Props) {
       {/* Event modals */}
       {eventModal.mode === 'create' && (
         <EventModal event={null} defaultStart={eventModal.start} defaultEnd={eventModal.end}
-          defaultAllDay={eventModal.allDay} calendars={calendars.filter((c) => c.supportsEvents)}
+          defaultAllDay={eventModal.allDay} prefill={eventModal.prefill}
+          calendars={calendars.filter((c) => c.supportsEvents)}
           onSave={handleSaveEvent} onClose={() => setEventModal({ mode: 'closed' })} />
       )}
       {eventModal.mode === 'edit' && (
         <EventModal event={eventModal.event} editScope={eventModal.editScope}
           calendars={calendars.filter((c) => c.supportsEvents)}
-          onSave={handleSaveEvent} onDelete={handleDeleteEvent} onClose={() => setEventModal({ mode: 'closed' })} />
+          onSave={handleSaveEvent} onDelete={handleDeleteEvent} onDuplicate={handleDuplicateEvent}
+          onCopy={(ev) => { eventClipboardRef.current = ev }}
+          onClose={() => setEventModal({ mode: 'closed' })} />
       )}
 
       {/* Task modals */}
@@ -267,8 +437,14 @@ export default function CalendarApp({ user, onLogout }: Props) {
           onSave={handleSaveContact} onDelete={handleDeleteContact} onClose={() => setContactModal({ mode: 'closed' })} />
       )}
 
-      {/* Help modal */}
+      {/* DAVx5 setup guide */}
       {helpOpen && <HelpModal onClose={() => setHelpOpen(false)} />}
+
+      {/* Keyboard shortcuts overlay */}
+      {shortcutsHelpOpen && <ShortcutsHelp onClose={() => setShortcutsHelpOpen(false)} />}
+
+      {/* Undo toast */}
+      {undoToast && <UndoToast label={undoToast.label} onUndo={runUndo} onDismiss={dismissUndo} />}
 
       {/* Subscription modal */}
       {subscriptionModalOpen && (
