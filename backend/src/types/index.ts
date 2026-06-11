@@ -39,6 +39,14 @@ export interface UpdateTaskBody extends CreateTaskBody {
   etag?: string;
 }
 
+// A guest on an event. Maps to an ATTENDEE line in the VEVENT.
+export interface Attendee {
+  email: string;
+  name?: string;
+  // PARTSTAT — RSVP state. NEEDS-ACTION until the guest responds.
+  status?: 'NEEDS-ACTION' | 'ACCEPTED' | 'DECLINED' | 'TENTATIVE';
+}
+
 export interface CalendarEvent {
   uid: string;
   url: string;          // event object URL (.ics)
@@ -51,6 +59,8 @@ export interface CalendarEvent {
   location?: string;
   rrule?: string;
   reminder?: number;    // minutes before event (from VALARM); undefined = no reminder
+  attendees?: Attendee[];
+  organizer?: string;   // organizer email
   etag?: string;
   // Recurring event occurrence fields
   isOccurrence?: boolean;   // true for expanded occurrences (not the master)
@@ -73,7 +83,7 @@ export interface CreateEventBody {
   location?: string;
   rrule?: string;
   reminder?: number;    // minutes before; undefined = no VALARM
-  attendees?: string[];
+  attendees?: Attendee[];
 }
 
 export interface UpdateEventBody extends CreateEventBody {

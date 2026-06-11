@@ -42,6 +42,12 @@ export interface UpdateTaskBody extends CreateTaskBody {
   etag?: string
 }
 
+export interface Attendee {
+  email: string
+  name?: string
+  status?: 'NEEDS-ACTION' | 'ACCEPTED' | 'DECLINED' | 'TENTATIVE'
+}
+
 export interface CalendarEvent {
   uid: string
   url: string           // event object URL (.ics)
@@ -54,6 +60,8 @@ export interface CalendarEvent {
   location?: string
   rrule?: string
   reminder?: number     // minutes before; undefined = no reminder
+  attendees?: Attendee[]
+  organizer?: string
   etag?: string
   // Recurring event occurrence fields (set by server-side expansion)
   isOccurrence?: boolean
@@ -75,6 +83,7 @@ export interface CreateEventBody {
   location?: string
   rrule?: string
   reminder?: number
+  attendees?: Attendee[]
 }
 
 export interface UpdateEventBody extends CreateEventBody {

@@ -234,6 +234,7 @@ export default function CalendarApp({ user, onLogout }: Props) {
         location: event.location,
         rrule: event.rrule,
         reminder: event.reminder,
+        attendees: event.attendees,
         calendarUrl: event.calendarUrl,
       },
     })

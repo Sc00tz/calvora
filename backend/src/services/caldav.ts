@@ -2,7 +2,7 @@
 import { createDAVClient, DAVCalendar, DAVCalendarObject } from 'tsdav';
 import ICAL from 'ical.js';
 import { v4 as uuidv4 } from 'uuid';
-import { CalendarInfo, CalendarEvent, CreateEventBody, UpdateEventBody, CalendarTask, CreateTaskBody, UpdateTaskBody } from '../types/index.js';
+import { CalendarInfo, CalendarEvent, CreateEventBody, UpdateEventBody, CalendarTask, CreateTaskBody, UpdateTaskBody, Attendee } from '../types/index.js';
 import { getTimezone, getVtimezoneText, utcIsoToZonedTime } from './timezone.js';
 
 type DAVClientInstance = Awaited<ReturnType<typeof createDAVClient>>;
@@ -161,6 +161,37 @@ function extractReminder(veventComp: ICAL.Component): number | undefined {
   return undefined;
 }
 
+// Strips a leading "mailto:" (case-insensitive) from an ATTENDEE/ORGANIZER value.
+function stripMailto(val: string): string {
+  return val.replace(/^mailto:/i, '').trim();
+}
+
+function extractAttendees(vevent: ICAL.Component): Attendee[] | undefined {
+  const props = vevent.getAllProperties('attendee');
+  if (props.length === 0) return undefined;
+  const attendees: Attendee[] = [];
+  for (const p of props) {
+    const email = stripMailto(icalValueToString(p.getFirstValue()) || '');
+    if (!email) continue;
+    const cn = p.getParameter('cn');
+    const partstat = p.getParameter('partstat');
+    const status = typeof partstat === 'string' ? partstat.toUpperCase() : undefined;
+    attendees.push({
+      email,
+      name: typeof cn === 'string' ? cn : undefined,
+      status: (['NEEDS-ACTION', 'ACCEPTED', 'DECLINED', 'TENTATIVE'].includes(status || '')
+        ? status : 'NEEDS-ACTION') as Attendee['status'],
+    });
+  }
+  return attendees.length > 0 ? attendees : undefined;
+}
+
+function extractOrganizer(vevent: ICAL.Component): string | undefined {
+  const org = vevent.getFirstPropertyValue('organizer');
+  const val = icalValueToString(org);
+  return val ? stripMailto(val) : undefined;
+}
+
 function parseMasterVevent(
   vevent: ICAL.Component, url: string, calendarUrl: string, uid: string, etag?: string
 ): CalendarEvent | null {
@@ -204,8 +235,10 @@ function parseMasterVevent(
   const rruleProp = vevent.getFirstProperty('rrule');
   const rrule = rruleProp ? (rruleProp.getFirstValue() as ICAL.Recur).toString() : undefined;
   const reminder = extractReminder(vevent);
+  const attendees = extractAttendees(vevent);
+  const organizer = extractOrganizer(vevent);
 
-  return { uid, url, calendarUrl, title: summary, start: startIso, end: endIso, allDay: isAllDay, description, location, rrule, reminder, etag };
+  return { uid, url, calendarUrl, title: summary, start: startIso, end: endIso, allDay: isAllDay, description, location, rrule, reminder, attendees, organizer, etag };
 }
 
 function parseIcalToEvents(
@@ -276,6 +309,8 @@ function parseIcalToEvents(
         const occDescription = icalValueToString(occComp.getFirstPropertyValue('description')) ?? masterEvent.description;
         const occLocation = icalValueToString(occComp.getFirstPropertyValue('location')) ?? masterEvent.location;
         const occReminder = extractReminder(occComp) ?? masterEvent.reminder;
+        const occAttendees = extractAttendees(occComp) ?? masterEvent.attendees;
+        const occOrganizer = extractOrganizer(occComp) ?? masterEvent.organizer;
 
         events.push({
           uid: `${uid}_${occStart.toJSDate().getTime()}`,
@@ -288,6 +323,8 @@ function parseIcalToEvents(
           description: occDescription,
           location: occLocation,
           reminder: occReminder,
+          attendees: occAttendees,
+          organizer: occOrganizer,
           etag,
           isOccurrence: true,
           masterUid: uid,
@@ -351,7 +388,8 @@ function truncateRruleUntil(masterVevent: ICAL.Component, untilTime: ICAL.Time):
 export async function createEvent(username: string, password: string, baseUrl: string, body: CreateEventBody): Promise<CalendarEvent> {
   const client = await createClient(username, password, baseUrl);
   const uid = uuidv4();
-  const icalString = buildIcalString({ ...body, uid });
+  // Organizer is the logged-in user (Davis usernames are email addresses).
+  const icalString = buildIcalString({ ...body, uid, organizer: username });
 
   await client.createCalendarObject({
     calendar: { url: body.calendarUrl },
@@ -372,6 +410,8 @@ export async function createEvent(username: string, password: string, baseUrl: s
     location: body.location,
     rrule: body.rrule,
     reminder: body.reminder,
+    attendees: body.attendees,
+    organizer: username,
   };
 }
 
@@ -382,7 +422,7 @@ export async function updateEvent(username: string, password: string, baseUrl: s
   if (scope === 'all') {
     // Rebuild the master VEVENT in place (existing behaviour)
     const client = await createClient(username, password, baseUrl);
-    const icalString = buildIcalString(body);
+    const icalString = buildIcalString({ ...body, organizer: username });
     await client.updateCalendarObject({
       calendarObject: { url: body.eventUrl, data: icalString, etag: body.etag },
     });
@@ -475,6 +515,8 @@ export async function updateEvent(username: string, password: string, baseUrl: s
       exVevent.addSubcomponent(valarm);
     }
 
+    addAttendees(exVevent, body.attendees, username);
+
     comp.addSubcomponent(exVevent);
     await putRawObject(body.eventUrl, auth, comp.toString(), etag);
     return;
@@ -507,7 +549,7 @@ export async function updateEvent(username: string, password: string, baseUrl: s
     //    carrying the edited fields and any RRULE from the request body.
     const client = await createClient(username, password, baseUrl);
     const newUid = uuidv4();
-    const newBody = { ...body, uid: newUid };
+    const newBody = { ...body, uid: newUid, organizer: username };
     const icalString = buildIcalString(newBody);
     await client.createCalendarObject({
       calendar: { url: body.calendarUrl },
@@ -590,7 +632,7 @@ export async function deleteEvent(
   }
 }
 
-function buildIcalString(event: CreateEventBody & { uid: string; eventUrl?: string; etag?: string }): string {
+function buildIcalString(event: CreateEventBody & { uid: string; eventUrl?: string; etag?: string; organizer?: string }): string {
   const comp = new ICAL.Component(['vcalendar', [], []]);
   comp.addPropertyWithValue('version', '2.0');
   comp.addPropertyWithValue('prodid', '-//Calvora//EN');
@@ -643,8 +685,34 @@ function buildIcalString(event: CreateEventBody & { uid: string; eventUrl?: stri
     vevent.addSubcomponent(valarm);
   }
 
+  addAttendees(vevent, event.attendees, event.organizer);
+
   comp.addSubcomponent(vevent);
   return comp.toString();
+}
+
+// Writes ORGANIZER + ATTENDEE lines onto a VEVENT. No-op when there are no guests.
+// We store guests only (no iTIP scheduling) — ORGANIZER identifies the owner so clients
+// render the event correctly and so a future invite feature has the field to work from.
+function addAttendees(vevent: ICAL.Component, attendees?: Attendee[], organizer?: string): void {
+  if (!attendees || attendees.length === 0) return;
+
+  if (organizer) {
+    const org = new ICAL.Property('organizer');
+    org.setValue(`mailto:${organizer}`);
+    vevent.addProperty(org);
+  }
+
+  for (const a of attendees) {
+    if (!a.email) continue;
+    const prop = new ICAL.Property('attendee');
+    if (a.name) prop.setParameter('cn', a.name);
+    prop.setParameter('partstat', a.status || 'NEEDS-ACTION');
+    prop.setParameter('role', 'REQ-PARTICIPANT');
+    prop.setParameter('rsvp', 'TRUE');
+    prop.setValue(`mailto:${a.email}`);
+    vevent.addProperty(prop);
+  }
 }
 
 export async function searchEvents(

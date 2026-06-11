@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { useState, useEffect, FormEvent } from 'react'
 import LocationSearch from './LocationSearch'
-import type { CalendarEvent, CalendarInfo, CreateEventBody, UpdateEventBody } from '../types/calendar'
+import AttendeesField from './AttendeesField'
+import type { CalendarEvent, CalendarInfo, CreateEventBody, UpdateEventBody, Attendee } from '../types/calendar'
 
 interface Props {
   event: CalendarEvent | null
@@ -51,6 +52,7 @@ export default function EventModal({ event, defaultStart, defaultEnd, defaultAll
   const [location, setLocation] = useState('')
   const [rrule, setRrule] = useState('')
   const [reminder, setReminder] = useState('')
+  const [attendees, setAttendees] = useState<Attendee[]>([])
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -72,6 +74,7 @@ export default function EventModal({ event, defaultStart, defaultEnd, defaultAll
       setLocation(event.location ?? '')
       setRrule(event.rrule ?? '')
       setReminder(event.reminder !== undefined ? String(event.reminder) : '')
+      setAttendees(event.attendees ?? [])
       if (useAllDay) {
         setStart(useStart.slice(0, 10))
         setEnd(useEnd.slice(0, 10))
@@ -91,6 +94,7 @@ export default function EventModal({ event, defaultStart, defaultEnd, defaultAll
       setLocation(prefill?.location ?? '')
       setRrule(prefill?.rrule ?? '')
       setReminder(prefill?.reminder !== undefined ? String(prefill.reminder) : '')
+      setAttendees(prefill?.attendees ?? [])
       setCalendarUrl(prefill?.calendarUrl ?? writableCalendars[0]?.url ?? '')
     }
   }, [event]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -131,6 +135,7 @@ export default function EventModal({ event, defaultStart, defaultEnd, defaultAll
           location: location || undefined,
           rrule: rrule || undefined,
           reminder: reminderVal,
+          attendees: attendees.length > 0 ? attendees : undefined,
         } satisfies CreateEventBody, true)
       } else {
         await onSave({
@@ -147,6 +152,7 @@ export default function EventModal({ event, defaultStart, defaultEnd, defaultAll
           // Don't carry the rrule when editing only this occurrence
           rrule: editScope === 'this' ? undefined : (rrule || undefined),
           reminder: reminderVal,
+          attendees: attendees.length > 0 ? attendees : undefined,
           etag: event!.etag,
           editScope,
           occurrenceStart: event!.occurrenceStart,
@@ -259,6 +265,12 @@ export default function EventModal({ event, defaultStart, defaultEnd, defaultAll
             <label className="block text-xs font-medium text-gray-500 mb-1">Description</label>
             <textarea placeholder="Add description" value={description} onChange={(e) => setDescription(e.target.value)}
               rows={2} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+          </div>
+
+          {/* Guests */}
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Guests</label>
+            <AttendeesField value={attendees} onChange={setAttendees} />
           </div>
 
           {/* Repeat — hidden when editing only this occurrence */}
