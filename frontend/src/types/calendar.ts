@@ -67,9 +67,10 @@ export interface CalendarEvent {
 export interface CreateEventBody {
   calendarUrl: string
   title: string
-  start: string
-  end: string
+  start: string         // UTC ISO instant
+  end: string           // UTC ISO instant
   allDay?: boolean
+  timeZone?: string     // IANA zone the times were authored in (browser zone for timed events)
   description?: string
   location?: string
   rrule?: string

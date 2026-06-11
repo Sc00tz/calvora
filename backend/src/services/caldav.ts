@@ -3,6 +3,7 @@ import { createDAVClient, DAVCalendar, DAVCalendarObject } from 'tsdav';
 import ICAL from 'ical.js';
 import { v4 as uuidv4 } from 'uuid';
 import { CalendarInfo, CalendarEvent, CreateEventBody, UpdateEventBody, CalendarTask, CreateTaskBody, UpdateTaskBody } from '../types/index.js';
+import { getTimezone, getVtimezoneText, utcIsoToZonedTime } from './timezone.js';
 
 type DAVClientInstance = Awaited<ReturnType<typeof createDAVClient>>;
 
@@ -418,6 +419,16 @@ export async function updateEvent(username: string, password: string, baseUrl: s
     exVevent.addPropertyWithValue('uid', realUid);
 
     const isAllDay = body.allDay ?? false;
+    const exTzid = !isAllDay && body.timeZone ? body.timeZone : undefined;
+    const exZone = exTzid ? getTimezone(exTzid) : null;
+    // Ensure the master ICS carries the VTIMEZONE this exception references.
+    if (exZone && exTzid && !comp.getAllSubcomponents('vtimezone').some(
+      (v: ICAL.Component) => v.getFirstPropertyValue('tzid') === exTzid
+    )) {
+      const vtzText = getVtimezoneText(exTzid);
+      if (vtzText) comp.addSubcomponent(new ICAL.Component(ICAL.parse(vtzText)));
+    }
+
     if (isAllDay) {
       const recId = ICAL.Time.fromDateString(body.occurrenceStart!.slice(0, 10));
       recId.isDate = true;
@@ -425,9 +436,11 @@ export async function updateEvent(username: string, password: string, baseUrl: s
       recProp.setValue(recId);
       exVevent.addProperty(recProp);
     } else {
+      // RECURRENCE-ID must match the occurrence's absolute instant as produced by the
+      // master expansion (UTC), so use a true-UTC time regardless of the new event's zone.
       exVevent.addPropertyWithValue(
         'recurrence-id',
-        ICAL.Time.fromJSDate(new Date(body.occurrenceStart!), false)
+        ICAL.Time.fromJSDate(new Date(body.occurrenceStart!), true)
       );
     }
 
@@ -441,9 +454,14 @@ export async function updateEvent(username: string, password: string, baseUrl: s
       const e = ICAL.Time.fromDateString(body.end.slice(0, 10));   e.isDate = true;
       exVevent.addPropertyWithValue('dtstart', s);
       exVevent.addPropertyWithValue('dtend', e);
+    } else if (exZone) {
+      const s = utcIsoToZonedTime(body.start, exTzid!)!;
+      const e = utcIsoToZonedTime(body.end, exTzid!)!;
+      exVevent.addPropertyWithValue('dtstart', s).setParameter('tzid', exTzid!);
+      exVevent.addPropertyWithValue('dtend', e).setParameter('tzid', exTzid!);
     } else {
-      exVevent.addPropertyWithValue('dtstart', ICAL.Time.fromJSDate(new Date(body.start), false));
-      exVevent.addPropertyWithValue('dtend',   ICAL.Time.fromJSDate(new Date(body.end),   false));
+      exVevent.addPropertyWithValue('dtstart', ICAL.Time.fromJSDate(new Date(body.start), true));
+      exVevent.addPropertyWithValue('dtend',   ICAL.Time.fromJSDate(new Date(body.end),   true));
     }
 
     if (body.description) exVevent.addPropertyWithValue('description', body.description);
@@ -577,6 +595,15 @@ function buildIcalString(event: CreateEventBody & { uid: string; eventUrl?: stri
   comp.addPropertyWithValue('version', '2.0');
   comp.addPropertyWithValue('prodid', '-//Calvora//EN');
 
+  // For timed events with a known IANA zone, anchor the wall-clock time to that zone
+  // and embed its VTIMEZONE. Falls back to a plain UTC instant if the zone is unknown.
+  const tzid = !event.allDay && event.timeZone ? event.timeZone : undefined;
+  const zone = tzid ? getTimezone(tzid) : null;
+  if (zone) {
+    const vtzText = getVtimezoneText(tzid!);
+    if (vtzText) comp.addSubcomponent(new ICAL.Component(ICAL.parse(vtzText)));
+  }
+
   const vevent = new ICAL.Component('vevent');
   vevent.addPropertyWithValue('uid', event.uid);
   vevent.addPropertyWithValue('summary', event.title);
@@ -593,9 +620,15 @@ function buildIcalString(event: CreateEventBody & { uid: string; eventUrl?: stri
     const endTime = ICAL.Time.fromDateString(event.end.slice(0, 10));
     endTime.isDate = true;
     vevent.addPropertyWithValue('dtend', endTime);
+  } else if (zone) {
+    const s = utcIsoToZonedTime(event.start, tzid!)!;
+    const e = utcIsoToZonedTime(event.end, tzid!)!;
+    vevent.addPropertyWithValue('dtstart', s).setParameter('tzid', tzid!);
+    vevent.addPropertyWithValue('dtend', e).setParameter('tzid', tzid!);
   } else {
-    vevent.addPropertyWithValue('dtstart', ICAL.Time.fromJSDate(new Date(event.start), false));
-    vevent.addPropertyWithValue('dtend', ICAL.Time.fromJSDate(new Date(event.end), false));
+    // No usable zone — store true UTC instants (correct for absolute time, TZ-independent).
+    vevent.addPropertyWithValue('dtstart', ICAL.Time.fromJSDate(new Date(event.start), true));
+    vevent.addPropertyWithValue('dtend', ICAL.Time.fromJSDate(new Date(event.end), true));
   }
 
   if (event.description) vevent.addPropertyWithValue('description', event.description);

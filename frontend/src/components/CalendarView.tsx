@@ -394,6 +394,7 @@ export default function CalendarView({ visibleCalendars, birthdayContacts, onCli
       start: newStart.toISOString(),
       end: newEnd.toISOString(),
       allDay: arg.event.allDay,
+      timeZone: arg.event.allDay ? undefined : Intl.DateTimeFormat().resolvedOptions().timeZone,
       description: event.description,
       location: event.location,
       // Drag-drop on a recurring occurrence → move only this instance
@@ -437,6 +438,7 @@ export default function CalendarView({ visibleCalendars, birthdayContacts, onCli
       start: arg.event.start.toISOString(),
       end: arg.event.end.toISOString(),
       allDay: arg.event.allDay,
+      timeZone: arg.event.allDay ? undefined : Intl.DateTimeFormat().resolvedOptions().timeZone,
       description: event.description,
       location: event.location,
       // Resize on a recurring occurrence → resize only this instance

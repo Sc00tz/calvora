@@ -208,6 +208,7 @@ export default function CalendarApp({ user, onLogout }: Props) {
       start: src.allDay ? newStart.toISOString().slice(0, 10) : newStart.toISOString(),
       end: src.allDay ? newEnd.toISOString().slice(0, 10) : newEnd.toISOString(),
       allDay: src.allDay,
+      timeZone: src.allDay ? undefined : Intl.DateTimeFormat().resolvedOptions().timeZone,
       description: src.description,
       location: src.location,
       reminder: src.reminder,

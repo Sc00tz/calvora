@@ -64,9 +64,11 @@ export interface CalendarEvent {
 export interface CreateEventBody {
   calendarUrl: string;  // calendar collection URL
   title: string;
-  start: string;
-  end: string;
+  start: string;        // UTC ISO instant
+  end: string;          // UTC ISO instant
   allDay?: boolean;
+  timeZone?: string;    // IANA zone (e.g. America/New_York) the times should be authored in;
+                        // when present, timed events are written with DTSTART;TZID=… + VTIMEZONE
   description?: string;
   location?: string;
   rrule?: string;

@@ -115,6 +115,9 @@ export default function EventModal({ event, defaultStart, defaultEnd, defaultAll
       const startIso = allDay ? start : new Date(start).toISOString()
       const endIso = allDay ? end : new Date(end).toISOString()
       const reminderVal = reminder ? parseInt(reminder, 10) : undefined
+      // Author timed events in the browser's IANA zone so DTSTART;TZID is written correctly,
+      // independent of the server's timezone. All-day events carry no zone.
+      const timeZone = allDay ? undefined : Intl.DateTimeFormat().resolvedOptions().timeZone
 
       if (isNew) {
         await onSave({
@@ -123,6 +126,7 @@ export default function EventModal({ event, defaultStart, defaultEnd, defaultAll
           start: startIso,
           end: endIso,
           allDay,
+          timeZone,
           description: description || undefined,
           location: location || undefined,
           rrule: rrule || undefined,
@@ -137,6 +141,7 @@ export default function EventModal({ event, defaultStart, defaultEnd, defaultAll
           start: startIso,
           end: endIso,
           allDay,
+          timeZone,
           description: description || undefined,
           location: location || undefined,
           // Don't carry the rrule when editing only this occurrence
