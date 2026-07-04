@@ -2,6 +2,7 @@
 import { useState, useEffect, FormEvent } from 'react'
 import LocationSearch from './LocationSearch'
 import AttendeesField from './AttendeesField'
+import { getFreeBusy } from '../api/client'
 import type { CalendarEvent, CalendarInfo, CreateEventBody, UpdateEventBody, Attendee } from '../types/calendar'
 
 interface Props {
@@ -57,6 +58,7 @@ export default function EventModal({ event, defaultStart, defaultEnd, defaultAll
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [conflicts, setConflicts] = useState<{ start: string; end: string }[]>([])
 
   useEffect(() => {
     if (event) {
@@ -98,6 +100,44 @@ export default function EventModal({ event, defaultStart, defaultEnd, defaultAll
       setCalendarUrl(prefill?.calendarUrl ?? writableCalendars[0]?.url ?? '')
     }
   }, [event]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Check the user's own calendars for conflicts with the selected time window.
+  // Debounced; timed events only; the event being edited is excluded so it doesn't
+  // flag itself. Best-effort — failures (e.g. a calendar not supporting free-busy) are silent.
+  useEffect(() => {
+    if (allDay || !start || !end) { setConflicts([]); return }
+    const startDate = new Date(start)
+    const endDate = new Date(end)
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || endDate <= startDate) {
+      setConflicts([]); return
+    }
+    const ownCalendarUrls = calendars
+      .filter((c) => c.supportsEvents && !c.isExternal && !c.isVirtual)
+      .map((c) => c.url)
+    if (ownCalendarUrls.length === 0) { setConflicts([]); return }
+
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      try {
+        const busy = await getFreeBusy(ownCalendarUrls, startDate.toISOString(), endDate.toISOString())
+        if (cancelled) return
+        const s = startDate.getTime()
+        const e = endDate.getTime()
+        // Overlap = busy.start < newEnd && busy.end > newStart. Ignore a block that exactly
+        // matches this event's own time (editing an existing event shouldn't flag itself).
+        const overlapping = busy.filter((b) => {
+          const bs = new Date(b.start).getTime()
+          const be = new Date(b.end).getTime()
+          if (event && bs === s && be === e) return false
+          return bs < e && be > s
+        })
+        setConflicts(overlapping)
+      } catch {
+        if (!cancelled) setConflicts([])
+      }
+    }, 500)
+    return () => { cancelled = true; clearTimeout(timer) }
+  }, [start, end, allDay, calendars, event])
 
   function handleAllDayToggle() {
     const next = !allDay
@@ -253,6 +293,18 @@ export default function EventModal({ event, defaultStart, defaultEnd, defaultAll
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" required />
             </div>
           </div>
+
+          {/* Conflict warning — overlaps with the user's own busy times */}
+          {conflicts.length > 0 && (
+            <div className="flex items-start gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4a2 2 0 00-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" />
+              </svg>
+              <span>
+                Overlaps {conflicts.length === 1 ? 'an existing event' : `${conflicts.length} existing events`} on your calendars.
+              </span>
+            </div>
+          )}
 
           {/* Location */}
           <div>

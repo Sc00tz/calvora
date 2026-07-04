@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { Router, Request, Response } from 'express';
-import { fetchEvents, createEvent, updateEvent, deleteEvent, searchEvents } from '../services/caldav.js';
+import { fetchEvents, createEvent, updateEvent, deleteEvent, searchEvents, getFreeBusy } from '../services/caldav.js';
 import { requireSession } from '../middleware/session.js';
 import { CreateEventBody, UpdateEventBody } from '../types/index.js';
 
@@ -20,6 +20,33 @@ router.get('/search', requireSession, async (req: Request, res: Response) => {
   } catch (err: any) {
     console.error('Search failed:', err?.message || err);
     res.status(502).json({ error: 'Search failed' });
+  }
+});
+
+// GET /api/events/freebusy?start=ISO&end=ISO&calendarUrl=url1&calendarUrl=url2
+// Returns the caller's busy intervals across the given calendars (their own availability).
+router.get('/freebusy', requireSession, async (req: Request, res: Response) => {
+  const { start, end } = req.query as { start?: string; end?: string };
+  const calendarUrls = ([] as string[]).concat((req.query.calendarUrl as any) ?? []).filter(Boolean);
+  const { username, password, davisBaseUrl } = req.session;
+
+  if (!start || !end || calendarUrls.length === 0) {
+    res.status(400).json({ error: 'start, end, and at least one calendarUrl are required' });
+    return;
+  }
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+    res.status(400).json({ error: 'Invalid start or end date' });
+    return;
+  }
+
+  try {
+    const busy = await getFreeBusy(username!, password!, davisBaseUrl!, calendarUrls, startDate, endDate);
+    res.json(busy);
+  } catch (err: any) {
+    console.error('Free/busy query failed:', err?.message || err);
+    res.status(502).json({ error: 'Free/busy query failed' });
   }
 });
 

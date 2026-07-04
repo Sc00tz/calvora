@@ -715,6 +715,104 @@ function addAttendees(vevent: ICAL.Component, attendees?: Attendee[], organizer?
   }
 }
 
+// ─── Free/Busy ────────────────────────────────────────────────────────────────
+
+export interface BusyInterval { start: string; end: string }  // ISO instants
+
+// Returns the busy intervals across the given calendars in [start, end], by issuing a
+// CalDAV free-busy-query REPORT against each collection. The REPORT returns a text/calendar
+// VFREEBUSY body (not XML), so we fetch directly and parse with ical.js.
+export async function getFreeBusy(
+  username: string,
+  password: string,
+  _baseUrl: string,
+  calendarUrls: string[],
+  start: Date,
+  end: Date
+): Promise<BusyInterval[]> {
+  const auth = Buffer.from(`${username}:${password}`).toString('base64');
+  const fmt = (d: Date) => d.toISOString().slice(0, 19).replace(/[-:]/g, '') + 'Z';
+  const body = `<?xml version="1.0" encoding="utf-8"?>
+<C:free-busy-query xmlns:C="urn:ietf:params:xml:ns:caldav">
+  <C:time-range start="${fmt(start)}" end="${fmt(end)}"/>
+</C:free-busy-query>`;
+
+  const intervals: BusyInterval[] = [];
+
+  await Promise.all(calendarUrls.map(async (url) => {
+    try {
+      const res = await fetch(url, {
+        method: 'REPORT',
+        headers: {
+          'Content-Type': 'application/xml; charset=utf-8',
+          'Depth': '1',
+          'Authorization': `Basic ${auth}`,
+        },
+        body,
+      });
+      if (!res.ok) return;
+      const text = await res.text();
+      if (!/BEGIN:VFREEBUSY/i.test(text)) return;
+      intervals.push(...parseFreeBusy(text));
+    } catch {
+      // Skip calendars that don't support the report or error out.
+    }
+  }));
+
+  return mergeIntervals(intervals);
+}
+
+function parseFreeBusy(icalString: string): BusyInterval[] {
+  const out: BusyInterval[] = [];
+  try {
+    const comp = new ICAL.Component(ICAL.parse(icalString));
+    const vfbs = comp.getAllSubcomponents('vfreebusy');
+    for (const vfb of vfbs) {
+      for (const prop of vfb.getAllProperties('freebusy')) {
+        // FBTYPE defaults to BUSY; skip explicitly FREE periods.
+        const fbtype = prop.getParameter('fbtype');
+        if (typeof fbtype === 'string' && fbtype.toUpperCase() === 'FREE') continue;
+        // Each FREEBUSY value is a "start/duration" or "start/end" period (possibly multiple).
+        for (const val of prop.getValues()) {
+          const period = val as ICAL.Period;
+          if (!period?.start) continue;
+          const s = period.start.toJSDate();
+          let e = s;
+          if (period.end) {
+            e = period.end.toJSDate();
+          } else if (period.duration) {
+            const endTime = period.start.clone();
+            endTime.addDuration(period.duration);
+            e = endTime.toJSDate();
+          }
+          out.push({ start: s.toISOString(), end: e.toISOString() });
+        }
+      }
+    }
+  } catch {
+    // Unparseable response — treat as no busy info.
+  }
+  return out;
+}
+
+// Merges overlapping/adjacent intervals into a minimal sorted set.
+function mergeIntervals(intervals: BusyInterval[]): BusyInterval[] {
+  if (intervals.length === 0) return [];
+  const sorted = intervals
+    .map(i => ({ s: new Date(i.start).getTime(), e: new Date(i.end).getTime() }))
+    .filter(i => i.e > i.s)
+    .sort((a, b) => a.s - b.s);
+  if (sorted.length === 0) return [];
+
+  const merged: { s: number; e: number }[] = [sorted[0]];
+  for (let i = 1; i < sorted.length; i++) {
+    const last = merged[merged.length - 1];
+    if (sorted[i].s <= last.e) last.e = Math.max(last.e, sorted[i].e);
+    else merged.push(sorted[i]);
+  }
+  return merged.map(m => ({ start: new Date(m.s).toISOString(), end: new Date(m.e).toISOString() }));
+}
+
 export async function searchEvents(
   username: string,
   password: string,

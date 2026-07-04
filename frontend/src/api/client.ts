@@ -40,6 +40,11 @@ export const deleteEvent = (
 export const searchEvents = (q: string, calendarUrls: string[]) =>
   api.get<CalendarEvent[]>('/events/search', { params: { q, calendarUrl: calendarUrls } }).then((r) => r.data)
 
+export const getFreeBusy = (calendarUrls: string[], start: string, end: string) =>
+  api.get<{ start: string; end: string }[]>('/events/freebusy', {
+    params: { calendarUrl: calendarUrls, start, end },
+  }).then((r) => r.data)
+
 // Tasks
 export const getTasks = (calendarUrl: string) =>
   api.get<CalendarTask[]>('/tasks', { params: { calendarUrl } }).then((r) => r.data)
