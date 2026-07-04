@@ -33,6 +33,9 @@ export default function CalendarView({ visibleCalendars, birthdayContacts, onCli
   // refetch fired immediately after create may not include it yet. We render these
   // optimistically and prune each one once it shows up in a server response.
   const optimisticRef = useRef<Map<string, CalendarEvent>>(new Map())
+  // Backoff state for external feeds: after repeated failures we stop re-fetching a
+  // feed on every view change, retrying only once its cooldown has elapsed. Keyed by URL.
+  const feedBackoffRef = useRef<Map<string, { failures: number; nextTryAt: number }>>(new Map())
   const [fcEvents, setFcEvents] = useState<EventInput[]>([])
   const [dateRange, setDateRange] = useState<{ start: Date; end: Date } | null>(null)
   const [printDialogOpen, setPrintDialogOpen] = useState(false)
@@ -151,6 +154,13 @@ export default function CalendarView({ visibleCalendars, birthdayContacts, onCli
         ),
         Promise.all(
           externalCalendars.map(async (cal) => {
+            // Skip feeds still in backoff cooldown — keep them flagged so the badge stays,
+            // but don't re-hammer a known-broken URL on every view change.
+            const backoff = feedBackoffRef.current.get(cal.url)
+            if (backoff && backoff.failures > 0 && Date.now() < backoff.nextTryAt) {
+              failedSubscriptionIds.push(cal.id)
+              return []
+            }
             try {
               const { getExternalIcal } = await import('../api/client')
               // @ts-ignore
@@ -159,6 +169,8 @@ export default function CalendarView({ visibleCalendars, birthdayContacts, onCli
               const jcalData = ICAL.parse(icsData)
               const comp = new ICAL.Component(jcalData)
               const vevents = comp.getAllSubcomponents('vevent')
+
+              feedBackoffRef.current.delete(cal.url) // success — clear any backoff
 
               return vevents.map((vevent: any) => {
                 const event = new ICAL.Event(vevent)
@@ -182,6 +194,11 @@ export default function CalendarView({ visibleCalendars, birthdayContacts, onCli
             } catch (err) {
               console.error('Failed to load external calendar:', cal.url, err)
               failedSubscriptionIds.push(cal.id)
+              // Exponential backoff capped at 5 min: 30s, 60s, 120s, … so a transient
+              // outage recovers on its own but a dead feed stops spamming.
+              const failures = (feedBackoffRef.current.get(cal.url)?.failures ?? 0) + 1
+              const delay = Math.min(30_000 * 2 ** (failures - 1), 5 * 60_000)
+              feedBackoffRef.current.set(cal.url, { failures, nextTryAt: Date.now() + delay })
               return []
             }
           })
