@@ -19,10 +19,12 @@ interface Props {
   onClickTask: (task: CalendarTask) => void
   onDatesChange: (date: Date) => void
   onPushUndo: (label: string, undo: () => Promise<void>) => void
+  // Reports which external (subscription) calendars failed to load this cycle, by id.
+  onSubscriptionErrors: (failedIds: string[]) => void
   calendarRef: MutableRefObject<CalendarHandle | null>
 }
 
-export default function CalendarView({ visibleCalendars, birthdayContacts, onClickSlot, onClickEvent, onClickTask, onDatesChange, onPushUndo, calendarRef }: Props) {
+export default function CalendarView({ visibleCalendars, birthdayContacts, onClickSlot, onClickEvent, onClickTask, onDatesChange, onPushUndo, onSubscriptionErrors, calendarRef }: Props) {
   const fcRef = useRef<FullCalendar>(null)
   const eventMapRef = useRef<Map<string, CalendarEvent>>(new Map())
   const taskMapRef = useRef<Map<string, CalendarTask>>(new Map())
@@ -130,7 +132,9 @@ export default function CalendarView({ visibleCalendars, birthdayContacts, onCli
 
   // ── Calendar loading ──────────────────────────────────────────────────────
   const loadEvents = useCallback(async (start: Date, end: Date, calendars: CalendarInfo[]) => {
-    if (calendars.length === 0) { setFcEvents([]); return }
+    if (calendars.length === 0) { setFcEvents([]); onSubscriptionErrors([]); return }
+    // Collects subscription calendars whose feed failed to load this cycle.
+    const failedSubscriptionIds: string[] = []
     try {
       const nativeEventCalendars = calendars.filter((c) => c.supportsEvents && !c.isExternal && !c.isVirtual)
       const externalCalendars = calendars.filter((c) => c.isExternal)
@@ -177,6 +181,7 @@ export default function CalendarView({ visibleCalendars, birthdayContacts, onCli
               })
             } catch (err) {
               console.error('Failed to load external calendar:', cal.url, err)
+              failedSubscriptionIds.push(cal.id)
               return []
             }
           })
@@ -327,8 +332,10 @@ export default function CalendarView({ visibleCalendars, birthdayContacts, onCli
       setFcEvents([...eventInputs, ...taskInputs])
     } catch (err) {
       console.error('Failed to fetch events:', err)
+    } finally {
+      onSubscriptionErrors(failedSubscriptionIds)
     }
-  }, [birthdayContacts])
+  }, [birthdayContacts, onSubscriptionErrors])
 
   useEffect(() => {
     if (dateRange) loadEvents(dateRange.start, dateRange.end, visibleCalendars)

@@ -57,6 +57,8 @@ export default function CalendarApp({ user, onLogout }: Props) {
 
   const [addressBooks, setAddressBooks] = useState<AddressBook[]>([])
   const [birthdayContacts, setBirthdayContacts] = useState<Contact[]>([])
+  // IDs of subscription calendars whose feed failed to load, for a sidebar warning badge.
+  const [failedSubscriptionIds, setFailedSubscriptionIds] = useState<Set<string>>(new Set())
   const calendarRef      = useRef<CalendarHandle | null>(null)
   const tasksViewRefetch = useRef<(() => void) | null>(null)
   const contactsRefetch  = useRef<(() => void) | null>(null)
@@ -245,6 +247,15 @@ export default function CalendarApp({ user, onLogout }: Props) {
     calendarRef.current?.refetchEvents()
   }, [refetchCalendars])
 
+  // Update the failed-subscription set only when it actually changes, so we don't
+  // re-render (and re-run loadEvents) on every identical report.
+  const handleSubscriptionErrors = useCallback((failedIds: string[]) => {
+    setFailedSubscriptionIds((prev) => {
+      if (prev.size === failedIds.length && failedIds.every((id) => prev.has(id))) return prev
+      return new Set(failedIds)
+    })
+  }, [])
+
   // ── Task handlers ───────────────────────────────────────────────────────────
   const handleSaveTask = useCallback(async (body: CreateTaskBody | UpdateTaskBody, isNew: boolean) => {
     if (isNew) await createTask(body as CreateTaskBody)
@@ -347,6 +358,7 @@ export default function CalendarApp({ user, onLogout }: Props) {
             calendars={calendars}
             addressBooks={addressBooks}
             visibleCalendarIds={visibleCalendarIds}
+            failedSubscriptionIds={failedSubscriptionIds}
             focusedDate={focusedDate}
             activeTab={activeTab}
             onTabChange={setActiveTab}
@@ -373,6 +385,7 @@ export default function CalendarApp({ user, onLogout }: Props) {
             onClickTask={(task) => setTaskModal({ mode: 'edit', task })}
             onDatesChange={setFocusedDate}
             onPushUndo={(label, undo) => pushUndo({ label, undo })}
+            onSubscriptionErrors={handleSubscriptionErrors}
             calendarRef={calendarRef}
           />
         )}
