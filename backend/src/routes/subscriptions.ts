@@ -144,12 +144,29 @@ router.get('/proxy', requireSession, async (req: Request, res: Response) => {
   }
 
   try {
-    const response = await fetch(url, {
-      signal: AbortSignal.timeout(5000),
-      redirect: 'error', // don't follow redirects — they could bounce to a blocked address
-    });
-    if (!response.ok) throw new Error(`External server responded with ${response.status}`);
-    const data = await response.text();
+    // Follow redirects manually so each hop is re-validated against the SSRF guard —
+    // a public URL must not be able to 30x-bounce into a private/internal address.
+    let current = url;
+    let fetchRes: globalThis.Response | undefined;
+    for (let hop = 0; hop < 5; hop++) {
+      fetchRes = await fetch(current, {
+        signal: AbortSignal.timeout(5000),
+        redirect: 'manual',
+      });
+      if (fetchRes.status >= 300 && fetchRes.status < 400) {
+        const location = fetchRes.headers.get('location');
+        if (!location) break;
+        const next = new URL(location, current).toString();
+        await assertSafeProxyUrl(next); // throws → caught below as a 400-class rejection
+        current = next;
+        continue;
+      }
+      break;
+    }
+    if (!fetchRes || !fetchRes.ok) {
+      throw new Error(`External server responded with ${fetchRes?.status ?? 'no response'}`);
+    }
+    const data = await fetchRes.text();
     res.setHeader('Content-Type', 'text/calendar');
     res.send(data);
   } catch (err: any) {

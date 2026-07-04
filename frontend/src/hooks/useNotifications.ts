@@ -29,7 +29,11 @@ export function useNotifications(calendars: CalendarInfo[], visibleCalendarIds: 
 
   useEffect(() => {
     if (!('Notification' in window)) return
-    const visibleCalendars = calendars.filter((c) => visibleCalendarIds.has(c.id))
+    // Only poll real Davis event calendars. Virtual (birthdays) and external (iCal
+    // subscription) calendars aren't Davis collections — querying /api/events for them 502s.
+    const visibleCalendars = calendars.filter(
+      (c) => visibleCalendarIds.has(c.id) && c.supportsEvents && !c.isVirtual && !c.isExternal
+    )
     if (visibleCalendars.length === 0) return
 
     async function checkUpcoming() {
