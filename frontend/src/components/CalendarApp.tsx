@@ -25,6 +25,8 @@ import type { User, CalendarEvent, CalendarInfo, CreateEventBody, UpdateEventBod
 interface Props {
   user: User
   onLogout: () => void
+  theme: 'light' | 'dark'
+  onToggleTheme: () => void
 }
 
 type EventModalState =
@@ -43,7 +45,7 @@ type ContactModalState =
   | { mode: 'create'; defaultAddressBookUrl?: string }
   | { mode: 'edit'; contact: Contact }
 
-export default function CalendarApp({ user, onLogout }: Props) {
+export default function CalendarApp({ user, onLogout, theme, onToggleTheme }: Props) {
   const { calendars, loading: calendarsLoading, refetch: refetchCalendars } = useCalendars()
   const [activeTab, setActiveTab] = useState<ActiveTab>('calendar')
   const [eventModal, setEventModal]     = useState<EventModalState>({ mode: 'closed' })
@@ -69,7 +71,7 @@ export default function CalendarApp({ user, onLogout }: Props) {
   // The most recently opened event — the implicit source for Ctrl/Cmd-C.
   const lastFocusedEventRef = useRef<CalendarEvent | null>(null)
 
-  useNotifications(calendars, visibleCalendarIds)
+  const { status: notifStatus, requestPermission: requestNotifications } = useNotifications(calendars, visibleCalendarIds)
 
   // Undo: refresh whatever view is active after an inverse op completes.
   const { toast: undoToast, pushUndo, runUndo, dismiss: dismissUndo } = useUndo(() => {
@@ -343,7 +345,7 @@ export default function CalendarApp({ user, onLogout }: Props) {
 
   if (calendarsLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
       </div>
     )
@@ -372,6 +374,10 @@ export default function CalendarApp({ user, onLogout }: Props) {
             onDeleteSubscription={handleDeleteSubscription}
             onHelp={() => setHelpOpen(true)}
             onLogout={onLogout}
+            theme={theme}
+            onToggleTheme={onToggleTheme}
+            notifStatus={notifStatus}
+            onEnableNotifications={requestNotifications}
           />
 
         }
