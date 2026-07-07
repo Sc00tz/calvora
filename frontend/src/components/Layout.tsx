@@ -8,7 +8,7 @@ interface Props {
 
 export default function Layout({ sidebar, children }: Props) {
   return (
-    <div className="flex h-screen overflow-hidden bg-white">
+    <div className="flex h-screen overflow-hidden bg-white dark:bg-gray-900">
       {sidebar}
       <main className="flex-1 min-w-0 flex flex-col overflow-hidden">
         {children}

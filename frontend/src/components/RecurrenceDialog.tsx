@@ -12,43 +12,43 @@ export default function RecurrenceDialog({ action, onSelect, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 overflow-hidden"
+        className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-sm mx-4 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-gray-800">
+        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+          <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100">
             {Verb} recurring event
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-200 text-xl leading-none">×</button>
         </div>
 
-        <p className="px-6 pt-4 pb-2 text-sm text-gray-500">
+        <p className="px-6 pt-4 pb-2 text-sm text-gray-500 dark:text-gray-400">
           Which events do you want to {verb}?
         </p>
 
         <div className="px-6 pb-5 flex flex-col gap-2">
           <button
             onClick={() => onSelect('this')}
-            className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-colors"
+            className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-400 hover:bg-blue-50 transition-colors"
           >
-            <p className="text-sm font-medium text-gray-800">This event</p>
-            <p className="text-xs text-gray-400 mt-0.5">Only this occurrence</p>
+            <p className="text-sm font-medium text-gray-800 dark:text-gray-100">This event</p>
+            <p className="text-xs text-gray-400 dark:text-gray-400 mt-0.5">Only this occurrence</p>
           </button>
 
           <button
             onClick={() => onSelect('following')}
-            className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-colors"
+            className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-400 hover:bg-blue-50 transition-colors"
           >
-            <p className="text-sm font-medium text-gray-800">This and following events</p>
-            <p className="text-xs text-gray-400 mt-0.5">This and all future occurrences</p>
+            <p className="text-sm font-medium text-gray-800 dark:text-gray-100">This and following events</p>
+            <p className="text-xs text-gray-400 dark:text-gray-400 mt-0.5">This and all future occurrences</p>
           </button>
 
           <button
             onClick={() => onSelect('all')}
-            className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-colors"
+            className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-400 hover:bg-blue-50 transition-colors"
           >
-            <p className="text-sm font-medium text-gray-800">All events</p>
-            <p className="text-xs text-gray-400 mt-0.5">Every occurrence in the series</p>
+            <p className="text-sm font-medium text-gray-800 dark:text-gray-100">All events</p>
+            <p className="text-xs text-gray-400 dark:text-gray-400 mt-0.5">Every occurrence in the series</p>
           </button>
         </div>
       </div>

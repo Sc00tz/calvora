@@ -153,12 +153,12 @@ export default function ContactModal({ contact, addressBooks, defaultAddressBook
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] flex flex-col overflow-hidden"
+        className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] flex flex-col overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100 flex-shrink-0">
-          <h2 className="text-base font-semibold text-gray-900">{isNew ? 'New contact' : 'Edit contact'}</h2>
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{isNew ? 'New contact' : 'Edit contact'}</h2>
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -176,7 +176,7 @@ export default function ContactModal({ contact, addressBooks, defaultAddressBook
                 </svg>
               )}
             </button>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+            <button onClick={onClose} className="text-gray-400 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -190,14 +190,14 @@ export default function ContactModal({ contact, addressBooks, defaultAddressBook
             {/* Photo */}
             <div className="flex items-center gap-4">
               <div
-                className="w-16 h-16 rounded-full flex-shrink-0 overflow-hidden bg-gray-100 flex items-center justify-center border border-gray-200 cursor-pointer relative group"
+                className="w-16 h-16 rounded-full flex-shrink-0 overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center border border-gray-200 dark:border-gray-700 cursor-pointer relative group"
                 onClick={() => document.getElementById('photo-input')?.click()}
                 title="Upload photo"
               >
                 {photo ? (
                   <img src={photo} alt="Contact" className="w-full h-full object-cover" />
                 ) : (
-                  <svg className="w-7 h-7 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <svg className="w-7 h-7 text-gray-400 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
                   </svg>
                 )}
@@ -210,7 +210,7 @@ export default function ContactModal({ contact, addressBooks, defaultAddressBook
               </div>
               <input id="photo-input" type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
               <div className="flex-1">
-                <p className="text-xs text-gray-500">Click to upload photo</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Click to upload photo</p>
                 {photo && (
                   <button type="button" onClick={() => setPhoto(undefined)}
                     className="text-xs text-red-500 hover:text-red-700 mt-1 transition-colors">
@@ -223,46 +223,46 @@ export default function ContactModal({ contact, addressBooks, defaultAddressBook
             {/* Name */}
             <div className="flex gap-3">
               <div className="flex-1">
-                <label className="block text-xs font-medium text-gray-500 mb-1">First name</label>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">First name</label>
                 <input ref={firstRef} type="text" value={firstName} onChange={e => setFirstName(e.target.value)}
                   placeholder="First"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100" />
               </div>
               <div className="flex-1">
-                <label className="block text-xs font-medium text-gray-500 mb-1">Last name</label>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Last name</label>
                 <input type="text" value={lastName} onChange={e => setLastName(e.target.value)}
                   placeholder="Last"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100" />
               </div>
             </div>
 
             {/* Company + Title */}
             <div className="flex gap-3">
               <div className="flex-1">
-                <label className="block text-xs font-medium text-gray-500 mb-1">Company</label>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Company</label>
                 <input type="text" value={org} onChange={e => setOrg(e.target.value)}
                   placeholder="Company"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100" />
               </div>
               <div className="flex-1">
-                <label className="block text-xs font-medium text-gray-500 mb-1">Job title</label>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Job title</label>
                 <input type="text" value={title} onChange={e => setTitle(e.target.value)}
                   placeholder="Title"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100" />
               </div>
             </div>
 
             {/* Email addresses */}
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Email</label>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Email</label>
               <div className="space-y-2">
                 {emails.map((e, i) => (
                   <div key={i} className="flex gap-2">
                     <input type="email" value={e.value} onChange={ev => updateEmail(i, 'value', ev.target.value)}
                       placeholder="Email address"
-                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                      className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100" />
                     <select value={e.type} onChange={ev => updateEmail(i, 'type', ev.target.value)}
-                      className="border border-gray-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                      className="border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 dark:text-gray-100">
                       {EMAIL_TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
                     </select>
                     {emails.length > 1 && (
@@ -284,15 +284,15 @@ export default function ContactModal({ contact, addressBooks, defaultAddressBook
 
             {/* Phone numbers */}
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Phone</label>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Phone</label>
               <div className="space-y-2">
                 {phones.map((p, i) => (
                   <div key={i} className="flex gap-2">
                     <input type="tel" value={p.value} onChange={ev => updatePhone(i, 'value', ev.target.value)}
                       placeholder="Phone number"
-                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                      className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100" />
                     <select value={p.type} onChange={ev => updatePhone(i, 'type', ev.target.value)}
-                      className="border border-gray-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                      className="border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 dark:text-gray-100">
                       {PHONE_TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
                     </select>
                     {phones.length > 1 && (
@@ -315,21 +315,21 @@ export default function ContactModal({ contact, addressBooks, defaultAddressBook
             {/* Birthday + Anniversary */}
             <div className="flex gap-3">
               <div className="flex-1">
-                <label className="block text-xs font-medium text-gray-500 mb-1">Birthday</label>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Birthday</label>
                 <input type="date" value={birthday} onChange={e => setBirthday(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100" />
               </div>
               <div className="flex-1">
-                <label className="block text-xs font-medium text-gray-500 mb-1">Anniversary</label>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Anniversary</label>
                 <input type="date" value={anniversary} onChange={e => setAnniversary(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100" />
               </div>
             </div>
 
             {/* Tags / Categories */}
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Tags</label>
-              <div className="flex flex-wrap gap-1.5 p-2 border border-gray-300 rounded-lg min-h-[40px] focus-within:ring-2 focus-within:ring-blue-500">
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Tags</label>
+              <div className="flex flex-wrap gap-1.5 p-2 border border-gray-300 dark:border-gray-600 rounded-lg min-h-[40px] focus-within:ring-2 focus-within:ring-blue-500">
                 {categories.map(tag => (
                   <span key={tag} className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs font-medium px-2 py-0.5 rounded-full">
                     {tag}
@@ -348,26 +348,26 @@ export default function ContactModal({ contact, addressBooks, defaultAddressBook
                   onKeyDown={handleTagKeyDown}
                   onBlur={() => { if (tagInput.trim()) addTag(tagInput) }}
                   placeholder={categories.length === 0 ? 'Add tags…' : ''}
-                  className="flex-1 min-w-[80px] text-sm outline-none bg-transparent"
+                  className="flex-1 min-w-[80px] text-sm outline-none bg-transparent dark:text-gray-100"
                 />
               </div>
-              <p className="text-xs text-gray-400 mt-1">Press Enter or comma to add</p>
+              <p className="text-xs text-gray-400 dark:text-gray-400 mt-1">Press Enter or comma to add</p>
             </div>
 
             {/* Notes */}
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Notes</label>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Notes</label>
               <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3}
                 placeholder="Add notes…"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none dark:bg-gray-800 dark:text-gray-100" />
             </div>
 
             {/* Address book selector (new contacts only, if multiple books) */}
             {isNew && addressBooks.length > 1 && (
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Save to</label>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Save to</label>
                 <select value={addressBookUrl} onChange={e => setAddressBookUrl(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 dark:text-gray-100">
                   {addressBooks.map(b => <option key={b.id} value={b.url}>{b.displayName}</option>)}
                 </select>
               </div>
@@ -377,7 +377,7 @@ export default function ContactModal({ contact, addressBooks, defaultAddressBook
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 flex-shrink-0">
+          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex-shrink-0">
             <div className="flex items-center gap-3">
               {!isNew && onDelete && (
                 <button type="button" onClick={handleDelete} disabled={deleting}
@@ -399,7 +399,7 @@ export default function ContactModal({ contact, addressBooks, defaultAddressBook
                       URL.revokeObjectURL(url)
                     } catch {}
                   }}
-                  className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                  className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
                   title="Download vCard"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -411,7 +411,7 @@ export default function ContactModal({ contact, addressBooks, defaultAddressBook
             </div>
             <div className="flex gap-2">
               <button type="button" onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors">
+                className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-200 transition-colors">
                 Cancel
               </button>
               <button type="submit" disabled={saving}

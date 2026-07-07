@@ -42,9 +42,9 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
       <div className="flex-shrink-0 w-7 h-7 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center mt-0.5">
         {n}
       </div>
-      <div className="flex-1 pb-6 border-b border-gray-100 last:border-0 last:pb-0">
-        <h3 className="text-sm font-semibold text-gray-900 mb-2">{title}</h3>
-        <div className="text-sm text-gray-600 space-y-2">{children}</div>
+      <div className="flex-1 pb-6 border-b border-gray-100 dark:border-gray-700 last:border-0 last:pb-0">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">{title}</h3>
+        <div className="text-sm text-gray-600 dark:text-gray-300 space-y-2">{children}</div>
       </div>
     </div>
   )
@@ -52,7 +52,7 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
 
 function Pill({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-block bg-gray-100 text-gray-700 text-xs font-medium rounded px-1.5 py-0.5 font-mono">
+    <span className="inline-block bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs font-medium rounded px-1.5 py-0.5 font-mono">
       {children}
     </span>
   )
@@ -80,17 +80,17 @@ export default function HelpModal({ onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden"
+        className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 pt-5 pb-0 border-b border-gray-100 flex-shrink-0">
+        <div className="px-6 pt-5 pb-0 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-base font-semibold text-gray-900">Sync with your devices</h2>
-              <p className="text-xs text-gray-400 mt-0.5">Setup instructions for calendars, tasks &amp; contacts</p>
+              <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Sync with your devices</h2>
+              <p className="text-xs text-gray-400 dark:text-gray-400 mt-0.5">Setup instructions for calendars, tasks &amp; contacts</p>
             </div>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -106,7 +106,7 @@ export default function HelpModal({ onClose }: Props) {
                 className={`pb-3 text-sm font-medium transition-colors border-b-2 ${
                   activeTab === tab.id
                     ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                 }`}
               >
                 {tab.label}
@@ -149,7 +149,7 @@ export default function HelpModal({ onClose }: Props) {
                   <li>Choose <span className="font-medium">"Login with URL and user name"</span></li>
                 </ol>
                 <div className="mt-3 space-y-2 pl-5">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Base URL</p>
+                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Base URL</p>
                   <CopyableUrl url={displayUrl} />
                 </div>
               </Step>
@@ -173,15 +173,15 @@ export default function HelpModal({ onClose }: Props) {
               </Step>
               <Step n={2} title="Enter External Server Details">
                 <div className="mt-3 space-y-2 pl-5">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Server</p>
+                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Server</p>
                   <CopyableUrl url={displayUrl} />
-                  <div className="grid grid-cols-2 gap-3 mt-3 text-xs text-gray-500 uppercase font-semibold">
+                  <div className="grid grid-cols-2 gap-3 mt-3 text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold">
                     <div>User Name</div>
                     <div>Password</div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3 text-sm text-gray-700">
-                    <div className="bg-gray-50 rounded px-2 py-1">Your username</div>
-                    <div className="bg-gray-50 rounded px-2 py-1">Your password</div>
+                  <div className="grid grid-cols-2 gap-3 text-sm text-gray-700 dark:text-gray-300">
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded px-2 py-1">Your username</div>
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded px-2 py-1">Your password</div>
                   </div>
                 </div>
               </Step>
@@ -207,7 +207,7 @@ export default function HelpModal({ onClose }: Props) {
                   <li>Enter your username, password, and the server address:</li>
                 </ol>
                 <div className="mt-3 pl-5">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Server Address</p>
+                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Server Address</p>
                   <CopyableUrl url={displayUrl} />
                 </div>
               </Step>
@@ -219,8 +219,8 @@ export default function HelpModal({ onClose }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-100 flex-shrink-0 flex items-center justify-between">
-          <p className="text-xs text-gray-400">
+        <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex-shrink-0 flex items-center justify-between">
+          <p className="text-xs text-gray-400 dark:text-gray-400">
             Need help? Check the{' '}
             <a
               href="https://sabre.io/dav/"

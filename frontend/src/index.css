@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Base page background follows the theme so there's no white gutter behind the app. */
+html { background: #ffffff; }
+html.dark { background: #0f172a; color-scheme: dark; }
+
 /* ─── FullCalendar overrides ─────────────────────────────────────── */
 
 /* Fill its container */
@@ -138,6 +142,52 @@
   color: #6b7280;
   font-weight: 500;
 }
+
+/* ─── FullCalendar dark theme ────────────────────────────────────── */
+
+html.dark .fc {
+  --fc-border-color: #334155;
+  --fc-page-bg-color: #0f172a;
+  --fc-neutral-bg-color: #1e293b;
+  --fc-today-bg-color: rgba(59, 130, 246, 0.12);
+  color: #e2e8f0;
+}
+html.dark .fc .fc-toolbar-title { color: #f1f5f9; }
+html.dark .fc .fc-col-header-cell-cushion { color: #94a3b8; }
+html.dark .fc .fc-daygrid-day-number { color: #cbd5e1; }
+html.dark .fc .fc-day-today { background: rgba(59, 130, 246, 0.12) !important; }
+html.dark .fc .fc-day-today .fc-daygrid-day-number { color: white; }
+
+/* Buttons */
+html.dark .fc .fc-button {
+  background: #1e293b !important;
+  color: #cbd5e1 !important;
+  border-color: #334155 !important;
+}
+html.dark .fc .fc-button:hover {
+  background: #334155 !important;
+  color: #f1f5f9 !important;
+}
+html.dark .fc .fc-button-active {
+  background: #2563eb !important;
+  color: white !important;
+  border-color: #2563eb !important;
+}
+
+/* Time axis / slot labels */
+html.dark .fc .fc-timegrid-slot-label-cushion,
+html.dark .fc .fc-list-day-text,
+html.dark .fc .fc-list-day-side-text { color: #94a3b8; }
+
+/* List (agenda) view surfaces */
+html.dark .fc .fc-list { border-color: #334155; }
+html.dark .fc .fc-list-day-cushion { background: #1e293b !important; }
+html.dark .fc .fc-list-event:hover td { background: #1e293b !important; }
+html.dark .fc .fc-list-event-title,
+html.dark .fc .fc-list-event-time { color: #e2e8f0; }
+html.dark .fc .fc-list-empty { color: #94a3b8; }
+
+html.dark .fc .fc-more-link { color: #94a3b8; }
 
 /* ─── Print styles ───────────────────────────────────────────────── */
 

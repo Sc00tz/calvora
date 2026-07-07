@@ -84,7 +84,7 @@ export default function TasksView({ visibleCalendars, onClickTask, onCreateTask,
 
   if (taskCalendars.length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
+      <div className="flex-1 flex items-center justify-center text-gray-400 dark:text-gray-400 text-sm">
         No task-capable calendars visible. Enable a calendar that supports tasks.
       </div>
     )
@@ -110,7 +110,7 @@ export default function TasksView({ visibleCalendars, onClickTask, onCreateTask,
       <div className="max-w-2xl mx-auto px-6 py-5">
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
-          <h1 className="text-xl font-semibold text-gray-900">Tasks</h1>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Tasks</h1>
           <button
             onClick={onCreateTask}
             className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg px-3 py-1.5 transition-colors"
@@ -129,7 +129,7 @@ export default function TasksView({ visibleCalendars, onClickTask, onCreateTask,
         )}
 
         {!loading && pending.length === 0 && completed.length === 0 && (
-          <p className="text-center text-gray-400 text-sm py-10">No tasks yet. Add one to get started.</p>
+          <p className="text-center text-gray-400 dark:text-gray-400 text-sm py-10">No tasks yet. Add one to get started.</p>
         )}
 
         {/* Pending tasks grouped by calendar */}
@@ -140,7 +140,7 @@ export default function TasksView({ visibleCalendars, onClickTask, onCreateTask,
             <div key={cal.url} className="mb-4">
               <div className="flex items-center gap-2 mb-2">
                 <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cal.color }} />
-                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{cal.displayName}</span>
+                <span className="text-xs font-semibold text-gray-400 dark:text-gray-400 uppercase tracking-wide">{cal.displayName}</span>
               </div>
               <ul className="space-y-1">
                 {calTasks.map(({ task }) => (
@@ -182,7 +182,7 @@ function TaskRow({ task, calColor, onClick, onToggle }: {
   return (
     <li
       onClick={onClick}
-      className="flex items-start gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 cursor-pointer group transition-colors"
+      className="flex items-start gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer group transition-colors"
     >
       {/* Checkbox */}
       <button
@@ -201,12 +201,12 @@ function TaskRow({ task, calColor, onClick, onToggle }: {
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <p className={`text-sm leading-snug ${isDone ? 'line-through text-gray-400' : 'text-gray-800'}`}>
+        <p className={`text-sm leading-snug ${isDone ? 'line-through text-gray-400 dark:text-gray-400' : 'text-gray-800 dark:text-gray-100'}`}>
           {task.title}
         </p>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
           {task.due && (
-            <span className={`text-xs ${isOverdue ? 'text-red-500 font-medium' : 'text-gray-400'}`}>
+            <span className={`text-xs ${isOverdue ? 'text-red-500 font-medium' : 'text-gray-400 dark:text-gray-400'}`}>
               {formatDue(task.due)}
             </span>
           )}
@@ -235,7 +235,7 @@ function CompletedSection({ items, onClickTask, onToggle }: {
     <div className="mt-4">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wide hover:text-gray-600 transition-colors mb-2"
+        className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 dark:text-gray-400 uppercase tracking-wide hover:text-gray-600 dark:hover:text-gray-200 transition-colors mb-2"
       >
         <svg className={`w-3 h-3 transition-transform ${open ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />

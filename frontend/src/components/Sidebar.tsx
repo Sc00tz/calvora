@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { useState, useRef } from 'react'
 import { logout as apiLogout, updateSubscriptionColor } from '../api/client'
+import type { NotificationStatus } from '../hooks/useNotifications'
 import type { CalendarInfo, User, AddressBook } from '../types/calendar'
 
 async function setCalendarColor(calendarUrl: string, color: string) {
@@ -34,6 +35,10 @@ interface Props {
   onDeleteSubscription: (id: string) => void
   onHelp: () => void
   onLogout: () => void
+  theme: 'light' | 'dark'
+  onToggleTheme: () => void
+  notifStatus: NotificationStatus
+  onEnableNotifications: () => void
 }
 
 
@@ -55,7 +60,11 @@ export default function Sidebar({
   onAddSubscription,
   onDeleteSubscription,
   onHelp,
-  onLogout
+  onLogout,
+  theme,
+  onToggleTheme,
+  notifStatus,
+  onEnableNotifications
 }: Props) {
 
   async function handleLogout() {
@@ -72,27 +81,27 @@ export default function Sidebar({
   const onCreate = activeTab === 'tasks' ? onCreateTask : activeTab === 'contacts' ? onCreateContact : onCreateEvent
 
   return (
-    <aside className="w-60 flex-shrink-0 bg-white border-r border-gray-100 flex flex-col select-none no-print">
+    <aside className="w-60 flex-shrink-0 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 flex flex-col select-none no-print">
       {/* Tab bar — icon only, title tooltip */}
       <div className="px-4 pt-4 pb-3">
-        <div className="flex items-center gap-1 mb-3 bg-gray-100 rounded-xl p-1">
+        <div className="flex items-center gap-1 mb-3 bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
           {/* Calendar */}
           <button title="Calendar" onClick={() => onTabChange('calendar')}
-            className={`flex-1 flex items-center justify-center py-2 rounded-lg transition-colors ${activeTab === 'calendar' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+            className={`flex-1 flex items-center justify-center py-2 rounded-lg transition-colors ${activeTab === 'calendar' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}>
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </button>
           {/* Tasks */}
           <button title="Tasks" onClick={() => onTabChange('tasks')}
-            className={`flex-1 flex items-center justify-center py-2 rounded-lg transition-colors ${activeTab === 'tasks' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+            className={`flex-1 flex items-center justify-center py-2 rounded-lg transition-colors ${activeTab === 'tasks' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}>
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
             </svg>
           </button>
           {/* Contacts */}
           <button title="Contacts" onClick={() => onTabChange('contacts')}
-            className={`flex-1 flex items-center justify-center py-2 rounded-lg transition-colors ${activeTab === 'contacts' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+            className={`flex-1 flex items-center justify-center py-2 rounded-lg transition-colors ${activeTab === 'contacts' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}>
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
@@ -117,7 +126,7 @@ export default function Sidebar({
 
       {/* Calendar / task lists — hidden in contacts mode */}
       {activeTab !== 'contacts' && (
-      <div className="flex-1 overflow-y-auto px-3 pb-4 border-t border-gray-100 pt-3">
+      <div className="flex-1 overflow-y-auto px-3 pb-4 border-t border-gray-100 dark:border-gray-800 pt-3">
         {visibleMine.length > 0 && (
           <CalendarSection label="My calendars" calendars={visibleMine} visibleCalendarIds={visibleCalendarIds}
             onToggle={onToggleCalendar} onColorChange={onColorChange} />
@@ -136,7 +145,7 @@ export default function Sidebar({
         )}
         <button
           onClick={onAddSubscription}
-          className="w-full flex items-center gap-2 px-2 py-1.5 mt-1 text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors group"
+          className="w-full flex items-center gap-2 px-2 py-1.5 mt-1 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors group"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -149,11 +158,11 @@ export default function Sidebar({
 
       {/* Address book list — only in contacts mode */}
       {activeTab === 'contacts' && addressBooks.length > 0 && (
-        <div className="flex-1 overflow-y-auto px-3 pb-4 border-t border-gray-100 pt-3">
+        <div className="flex-1 overflow-y-auto px-3 pb-4 border-t border-gray-100 dark:border-gray-800 pt-3">
           <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-2 mb-1">Address books</p>
           <ul className="space-y-0.5">
             {addressBooks.map(book => (
-              <li key={book.id} className="px-2 py-1.5 text-sm text-gray-700 rounded-lg hover:bg-gray-50 flex items-center gap-2">
+              <li key={book.id} className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2">
                 <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
@@ -166,18 +175,46 @@ export default function Sidebar({
       {activeTab === 'contacts' && addressBooks.length === 0 && <div className="flex-1" />}
 
       {/* User / logout */}
-      <div className="px-3 py-3 border-t border-gray-100">
+      <div className="px-3 py-3 border-t border-gray-100 dark:border-gray-800">
         <div className="flex items-center gap-2.5 px-2 py-1.5">
-          <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-            <span className="text-xs font-semibold text-blue-700">{user.username.charAt(0).toUpperCase()}</span>
+          <div className="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center flex-shrink-0">
+            <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">{user.username.charAt(0).toUpperCase()}</span>
           </div>
-          <p className="text-xs text-gray-500 truncate flex-1">{user.username}</p>
-          <button onClick={onHelp} title="DAVx⁵ setup guide" className="text-gray-400 hover:text-gray-600 transition-colors">
+          <p className="text-xs text-gray-500 dark:text-gray-400 truncate flex-1">{user.username}</p>
+          {notifStatus === 'default' && (
+            <button onClick={onEnableNotifications} title="Enable event reminders"
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+            </button>
+          )}
+          {notifStatus === 'denied' && (
+            <span title="Reminders blocked — enable notifications for this site in your browser settings"
+              className="text-gray-300 dark:text-gray-600">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.73 21a2 2 0 01-3.46 0M18.63 13A17.89 17.89 0 0118 8M6.26 6.26A5.86 5.86 0 006 8c0 7-3 9-3 9h14M18 8a6 6 0 00-9.33-5M1 1l22 22" />
+              </svg>
+            </span>
+          )}
+          <button onClick={onToggleTheme} title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+            {theme === 'dark' ? (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+              </svg>
+            )}
+          </button>
+          <button onClick={onHelp} title="DAVx⁵ setup guide" className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </button>
-          <button onClick={handleLogout} title="Sign out" className="text-gray-400 hover:text-gray-600 transition-colors">
+          <button onClick={handleLogout} title="Sign out" className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
@@ -279,11 +316,11 @@ function CalendarItem({ calendar, visible, failed, onToggle, onColorChange, onDe
   }
 
   return (
-    <li className={`relative flex items-center gap-1 group rounded-lg ${isShared ? 'bg-gray-50' : ''}`}>
+    <li className={`relative flex items-center gap-1 group rounded-lg ${isShared ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}>
       {/* Toggle + label */}
       <button
         onClick={onToggle}
-        className="flex-1 min-w-0 flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-gray-100 transition-colors text-left"
+        className="flex-1 min-w-0 flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
       >
         <span
           className="w-3.5 h-3.5 rounded-sm flex-shrink-0 flex items-center justify-center border-2 transition-colors"
@@ -303,7 +340,7 @@ function CalendarItem({ calendar, visible, failed, onToggle, onColorChange, onDe
           </svg>
         )}
 
-        <span className={`text-sm leading-snug truncate flex-1 ${visible ? 'text-gray-700' : 'text-gray-400'} ${isShared ? 'text-gray-500' : ''}`}>
+        <span className={`text-sm leading-snug truncate flex-1 ${visible ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-500'} ${isShared ? 'text-gray-500 dark:text-gray-400' : ''}`}>
           {calendar.displayName}
         </span>
 
@@ -367,10 +404,10 @@ function CalendarItem({ calendar, visible, failed, onToggle, onColorChange, onDe
 
       {/* Feed URL popover */}
       {showUrl && calendar.isExternal && (
-        <div className="absolute left-2 right-2 top-full mt-1 z-20 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
+        <div className="absolute left-2 right-2 top-full mt-1 z-20 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2">
           <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Feed URL</p>
           <div className="flex items-start gap-1.5">
-            <span className="flex-1 text-[11px] text-gray-600 break-all leading-snug">{calendar.url}</span>
+            <span className="flex-1 text-[11px] text-gray-600 dark:text-gray-300 break-all leading-snug">{calendar.url}</span>
             <button
               onClick={(e) => { e.stopPropagation(); copyUrl() }}
               title="Copy URL"
@@ -426,12 +463,12 @@ function MiniCalendar({ focusedDate, onSelectDate }: { focusedDate: Date; onSele
       <div className="flex items-center justify-between mb-2 px-1">
         <button
           onClick={() => { const d = new Date(viewYear, viewMonth - 1, 1); setViewMonth(d.getMonth()); setViewYear(d.getFullYear()) }}
-          className="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500 text-xs"
+          className="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs"
         >‹</button>
-        <span className="text-xs font-semibold text-gray-700">{MONTH_NAMES[viewMonth]} {viewYear}</span>
+        <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">{MONTH_NAMES[viewMonth]} {viewYear}</span>
         <button
           onClick={() => { const d = new Date(viewYear, viewMonth + 1, 1); setViewMonth(d.getMonth()); setViewYear(d.getFullYear()) }}
-          className="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500 text-xs"
+          className="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs"
         >›</button>
       </div>
 
@@ -453,7 +490,7 @@ function MiniCalendar({ focusedDate, onSelectDate }: { focusedDate: Date; onSele
               onClick={() => onSelectDate(new Date(viewYear, viewMonth, day))}
               className={`
                 w-6 h-6 mx-auto flex items-center justify-center rounded-full text-[11px] font-medium transition-colors
-                ${isToday(day) ? 'bg-blue-600 text-white' : isFocused(day) && !isToday(day) ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'}
+                ${isToday(day) ? 'bg-blue-600 text-white' : isFocused(day) && !isToday(day) ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}
               `}
             >
               {day}

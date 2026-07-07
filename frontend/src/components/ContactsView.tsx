@@ -159,19 +159,19 @@ export default function ContactsView({ onClickContact, onCreateContact, onAddres
   return (
     <div className="flex-1 min-h-0 flex flex-col">
       {/* Toolbar */}
-      <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 flex-shrink-0">
+      <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
         {/* Search */}
         <div className="relative flex-1 max-w-md">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
           </svg>
           <input
             type="text" value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search contacts…"
-            className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           {search && (
-            <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+            <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -182,14 +182,14 @@ export default function ContactsView({ onClickContact, onCreateContact, onAddres
         {/* Address book filter */}
         {addressBooks.length > 1 && (
           <select value={selectedBook} onChange={e => setSelectedBook(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+            className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 dark:text-gray-100">
             <option value="all">All contacts</option>
             {addressBooks.map(b => <option key={b.id} value={b.url}>{b.displayName}</option>)}
           </select>
         )}
 
         {/* Contact count */}
-        <span className="text-xs text-gray-400 whitespace-nowrap">
+        <span className="text-xs text-gray-400 dark:text-gray-400 whitespace-nowrap">
           {filtered.length} contact{filtered.length !== 1 ? 's' : ''}
         </span>
 
@@ -199,7 +199,7 @@ export default function ContactsView({ onClickContact, onCreateContact, onAddres
           <button
             onClick={() => importInputRef.current?.click()}
             title="Import vCard (.vcf)"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
@@ -209,7 +209,7 @@ export default function ContactsView({ onClickContact, onCreateContact, onAddres
           <button
             onClick={handleExport}
             title="Export contacts as .vcf"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5 0l4.5-4.5M12 21V7.5" />
@@ -229,8 +229,8 @@ export default function ContactsView({ onClickContact, onCreateContact, onAddres
             <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-            <svg className="w-12 h-12 mb-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+          <div className="flex flex-col items-center justify-center py-16 text-gray-400 dark:text-gray-400">
+            <svg className="w-12 h-12 mb-3 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
             <p className="text-sm">{search ? 'No contacts match your search' : 'No contacts yet'}</p>
@@ -246,11 +246,11 @@ export default function ContactsView({ onClickContact, onCreateContact, onAddres
             {/* Favorites section */}
             {favorites.length > 0 && (
               <div>
-                <div className="sticky top-0 bg-white z-10 py-1.5 flex items-center gap-1.5">
+                <div className="sticky top-0 bg-white dark:bg-gray-900 z-10 py-1.5 flex items-center gap-1.5">
                   <svg className="w-3 h-3 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                   </svg>
-                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Favorites</span>
+                  <span className="text-xs font-semibold text-gray-400 dark:text-gray-400 uppercase tracking-widest">Favorites</span>
                 </div>
                 {favorites.map(contact => (
                   <ContactRow key={contact.uid} contact={contact}
@@ -273,8 +273,8 @@ export default function ContactsView({ onClickContact, onCreateContact, onAddres
             {/* Alphabetical groups */}
             {groups.map(([letter, groupContacts]) => (
               <div key={letter}>
-                <div className="sticky top-0 bg-white z-10 py-1.5">
-                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">{letter}</span>
+                <div className="sticky top-0 bg-white dark:bg-gray-900 z-10 py-1.5">
+                  <span className="text-xs font-semibold text-gray-400 dark:text-gray-400 uppercase tracking-widest">{letter}</span>
                 </div>
                 {groupContacts.map(contact => (
                   <ContactRow
@@ -315,7 +315,7 @@ function ContactRow({ contact, onClick, onToggleStar, onExport }: { contact: Con
 
   return (
     <div
-      className="w-full flex items-center gap-4 py-2.5 px-2 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer group"
+      className="w-full flex items-center gap-4 py-2.5 px-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer group"
       onClick={onClick}
       role="button"
       tabIndex={0}
@@ -339,8 +339,8 @@ function ContactRow({ contact, onClick, onToggleStar, onExport }: { contact: Con
 
       {/* Text */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900 truncate">{contact.fullName}</p>
-        {secondary && <p className="text-xs text-gray-500 truncate mt-0.5">{secondary}</p>}
+        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{contact.fullName}</p>
+        {secondary && <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{secondary}</p>}
       </div>
 
       {/* Actions: star always visible when starred, others on hover */}
@@ -349,7 +349,7 @@ function ContactRow({ contact, onClick, onToggleStar, onExport }: { contact: Con
           type="button"
           onClick={(e) => { e.stopPropagation(); onToggleStar() }}
           title={contact.starred ? 'Remove from favorites' : 'Add to favorites'}
-          className={`p-1 transition-colors ${contact.starred ? 'text-amber-400' : 'text-gray-200 opacity-0 group-hover:opacity-100 hover:text-amber-400'}`}
+          className={`p-1 transition-colors ${contact.starred ? 'text-amber-400' : 'text-gray-200 dark:text-gray-700 opacity-0 group-hover:opacity-100 hover:text-amber-400'}`}
         >
           {contact.starred ? (
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -365,13 +365,13 @@ function ContactRow({ contact, onClick, onToggleStar, onExport }: { contact: Con
           type="button"
           onClick={(e) => { e.stopPropagation(); onExport() }}
           title="Export vCard"
-          className="p-1 text-gray-400 opacity-0 group-hover:opacity-100 hover:text-gray-600 transition-colors"
+          className="p-1 text-gray-400 dark:text-gray-400 opacity-0 group-hover:opacity-100 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5 0l4.5-4.5M12 21V7.5" />
           </svg>
         </button>
-        <svg className="w-4 h-4 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <svg className="w-4 h-4 text-gray-300 dark:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
       </div>

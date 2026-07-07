@@ -498,7 +498,7 @@ export default function CalendarView({ visibleCalendars, birthdayContacts, onCli
       {/* Search bar */}
       <div className="px-5 pt-4 pb-2 flex-shrink-0 no-print" ref={searchRef}>
         <div className="relative max-w-sm">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
           </svg>
           <input
@@ -509,12 +509,12 @@ export default function CalendarView({ visibleCalendars, birthdayContacts, onCli
             onFocus={() => { if (searchResults.length > 0) setSearchOpen(true) }}
             onKeyDown={(e) => { if (e.key === 'Escape') { setSearchQuery(''); setSearchOpen(false) } }}
             placeholder="Search events…"
-            className="w-full pl-9 pr-8 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            className="w-full pl-9 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 dark:text-gray-100"
           />
           {searchQuery && (
             <button
               onClick={() => { setSearchQuery(''); setSearchOpen(false) }}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -524,13 +524,13 @@ export default function CalendarView({ visibleCalendars, birthdayContacts, onCli
 
           {/* Results dropdown */}
           {searchOpen && searchQuery.trim() && (
-            <div className="absolute top-full mt-1 left-0 right-0 bg-white rounded-xl shadow-lg border border-gray-200 z-50 overflow-hidden max-h-80 overflow-y-auto">
+            <div className="absolute top-full mt-1 left-0 right-0 bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-50 overflow-hidden max-h-80 overflow-y-auto">
               {searchLoading ? (
                 <div className="flex justify-center py-6">
                   <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
                 </div>
               ) : searchResults.length === 0 ? (
-                <p className="text-sm text-gray-400 text-center py-6">No events found</p>
+                <p className="text-sm text-gray-400 dark:text-gray-400 text-center py-6">No events found</p>
               ) : (
                 searchResults.map((event) => {
                   const cal = visibleCalendars.find((c) => c.url === event.calendarUrl)
@@ -543,15 +543,15 @@ export default function CalendarView({ visibleCalendars, birthdayContacts, onCli
                     <button
                       key={event.uid}
                       onMouseDown={(e) => { e.preventDefault(); handleSearchResultClick(event) }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 text-left transition-colors"
+                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 text-left transition-colors"
                     >
                       <span
                         className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                         style={{ backgroundColor: cal?.color ?? '#3788d8' }}
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{event.title}</p>
-                        <p className="text-xs text-gray-400 truncate">
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{event.title}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-400 truncate">
                           {dateStr}{event.location ? `  ·  ${event.location}` : ''}
                         </p>
                       </div>

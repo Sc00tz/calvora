@@ -101,12 +101,12 @@ export default function AttendeesField({ value, onChange }: Props) {
         <ul className="flex flex-wrap gap-1.5 mb-2">
           {value.map((a) => (
             <li key={a.email}
-              className="flex items-center gap-1.5 bg-gray-100 rounded-full pl-2 pr-1 py-1 text-xs text-gray-700">
+              className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 rounded-full pl-2 pr-1 py-1 text-xs text-gray-700 dark:text-gray-300">
               <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${STATUS_DOT[a.status || 'NEEDS-ACTION']}`}
                 title={STATUS_LABEL[a.status || 'NEEDS-ACTION']} />
               <span className="truncate max-w-[12rem]">{a.name || a.email}</span>
               <button type="button" onClick={() => removeAttendee(a.email)} title="Remove guest"
-                className="text-gray-400 hover:text-red-500 leading-none px-0.5">×</button>
+                className="text-gray-400 dark:text-gray-400 hover:text-red-500 leading-none px-0.5">×</button>
             </li>
           ))}
         </ul>
@@ -119,18 +119,18 @@ export default function AttendeesField({ value, onChange }: Props) {
         onFocus={() => setOpen(true)}
         onKeyDown={handleKeyDown}
         placeholder="Add guest by name or email"
-        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100"
       />
 
       {open && matches.length > 0 && (
-        <ul className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-y-auto">
+        <ul className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-52 overflow-y-auto">
           {matches.map((s) => (
             <li key={s.email}>
               <button type="button"
                 onMouseDown={(e) => { e.preventDefault(); addAttendee(s.email, s.name) }}
-                className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-50 last:border-0">
-                <span className="block text-sm text-gray-800">{s.name}</span>
-                <span className="block text-xs text-gray-400">{s.email}</span>
+                className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 border-b border-gray-50 dark:border-gray-700 last:border-0">
+                <span className="block text-sm text-gray-800 dark:text-gray-100">{s.name}</span>
+                <span className="block text-xs text-gray-400 dark:text-gray-400">{s.email}</span>
               </button>
             </li>
           ))}

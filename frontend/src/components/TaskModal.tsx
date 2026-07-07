@@ -94,13 +94,13 @@ export default function TaskModal({ task, calendars, defaultCalendarUrl, onSave,
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden"
+        className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3">
-          <h2 className="text-base font-semibold text-gray-900">{isNew ? 'New task' : 'Edit task'}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{isNew ? 'New task' : 'Edit task'}</h2>
+          <button onClick={onClose} className="text-gray-400 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -115,7 +115,7 @@ export default function TaskModal({ task, calendars, defaultCalendarUrl, onSave,
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Task title"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100"
           />
 
           {/* Calendar (only shown for new tasks) */}
@@ -128,7 +128,7 @@ export default function TaskModal({ task, calendars, defaultCalendarUrl, onSave,
               <select
                 value={calendarUrl}
                 onChange={(e) => setCalendarUrl(e.target.value)}
-                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100"
               >
                 {calendars.map((cal) => (
                   <option key={cal.id} value={cal.url}>{cal.displayName}</option>
@@ -139,23 +139,23 @@ export default function TaskModal({ task, calendars, defaultCalendarUrl, onSave,
 
           {/* Due date */}
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Due date</label>
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Due date</label>
             <input
               type="datetime-local"
               value={due}
               onChange={(e) => setDue(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100"
             />
           </div>
 
           {/* Status + Priority row */}
           <div className="flex gap-2">
             <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-500 mb-1">Status</label>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Status</label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as CalendarTask['status'])}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100"
               >
                 <option value="NEEDS-ACTION">To do</option>
                 <option value="IN-PROCESS">In progress</option>
@@ -164,11 +164,11 @@ export default function TaskModal({ task, calendars, defaultCalendarUrl, onSave,
               </select>
             </div>
             <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-500 mb-1">Priority</label>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Priority</label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(Number(e.target.value))}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100"
               >
                 {PRIORITY_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -179,12 +179,12 @@ export default function TaskModal({ task, calendars, defaultCalendarUrl, onSave,
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Notes</label>
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Notes</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none dark:bg-gray-800 dark:text-gray-100"
               placeholder="Add notes..."
             />
           </div>
@@ -207,7 +207,7 @@ export default function TaskModal({ task, calendars, defaultCalendarUrl, onSave,
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
               >
                 Cancel
               </button>

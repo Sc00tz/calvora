@@ -28,37 +28,37 @@ export default function LoginForm({ onLogin }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
       <div className="w-full max-w-sm">
         {/* Logo / title */}
         <div className="text-center mb-8">
           <img src="/Logo.png" alt="Calvora" className="mx-auto mb-4 h-20 w-auto" />
-          <p className="text-sm text-gray-500">Sign in with your Davis account</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Sign in with your Davis account</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Username</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Username</label>
               <input
                 type="text"
                 autoComplete="username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="you@example.com"
-                className="w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-white dark:bg-gray-800"
                 required
                 autoFocus
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Password</label>
               <input
                 type="password"
                 autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-white dark:bg-gray-800"
                 required
               />
             </div>

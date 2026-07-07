@@ -225,21 +225,21 @@ export default function EventModal({ event, defaultStart, defaultEnd, defaultAll
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
 
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
           <div>
-            <h2 className="text-base font-semibold text-gray-800">{readOnly ? 'Event details' : isNew ? 'New event' : 'Edit event'}</h2>
+            <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100">{readOnly ? 'Event details' : isNew ? 'New event' : 'Edit event'}</h2>
             {editScope && (
-              <p className="text-xs text-gray-400 mt-0.5">
+              <p className="text-xs text-gray-400 dark:text-gray-400 mt-0.5">
                 {editScope === 'this' && 'This occurrence only'}
                 {editScope === 'following' && 'This and following occurrences'}
                 {editScope === 'all' && 'All occurrences in the series'}
               </p>
             )}
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+          <button onClick={onClose} className="text-gray-400 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl leading-none">×</button>
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4 max-h-[80vh] overflow-y-auto">
@@ -252,7 +252,7 @@ export default function EventModal({ event, defaultStart, defaultEnd, defaultAll
             placeholder="Title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full text-lg font-medium border-0 border-b border-gray-200 pb-2 focus:outline-none focus:border-blue-500 placeholder-gray-300"
+            className="w-full text-lg font-medium border-0 border-b border-gray-200 dark:border-gray-600 pb-2 focus:outline-none focus:border-blue-500 placeholder-gray-300 dark:placeholder-gray-500 dark:bg-transparent dark:text-gray-100"
             required
             autoFocus
           />
@@ -260,7 +260,7 @@ export default function EventModal({ event, defaultStart, defaultEnd, defaultAll
           {/* Calendar selector */}
           {isNew && writableCalendars.length > 1 && (
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Calendar</label>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Calendar</label>
               <div className="relative flex items-center">
                 {selectedCal && (
                   <span className="absolute left-3 w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: selectedCal.color }} />
@@ -268,7 +268,7 @@ export default function EventModal({ event, defaultStart, defaultEnd, defaultAll
                 <select
                   value={calendarUrl}
                   onChange={(e) => setCalendarUrl(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 pl-8 pr-3"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 pl-8 pr-3 dark:bg-gray-800 dark:text-gray-100"
                 >
                   {writableCalendars.map((c) => (
                     <option key={c.id} value={c.url}>{c.displayName}</option>
@@ -280,27 +280,27 @@ export default function EventModal({ event, defaultStart, defaultEnd, defaultAll
 
           {/* All day */}
           <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input type="checkbox" checked={allDay} onChange={handleAllDayToggle} className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-            <span className="text-sm text-gray-700">All day</span>
+            <input type="checkbox" checked={allDay} onChange={handleAllDayToggle} className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500" />
+            <span className="text-sm text-gray-700 dark:text-gray-300">All day</span>
           </label>
 
           {/* Start / End */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Start</label>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Start</label>
               <input type={allDay ? 'date' : 'datetime-local'} value={start} onChange={(e) => setStart(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100" required />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">End</label>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">End</label>
               <input type={allDay ? 'date' : 'datetime-local'} value={end} onChange={(e) => setEnd(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100" required />
             </div>
           </div>
 
           {/* Conflict warning — overlaps with the user's own busy times */}
           {conflicts.length > 0 && (
-            <div className="flex items-start gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            <div className="flex items-start gap-2 text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-900 rounded-lg px-3 py-2">
               <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4a2 2 0 00-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" />
               </svg>
@@ -312,29 +312,29 @@ export default function EventModal({ event, defaultStart, defaultEnd, defaultAll
 
           {/* Location */}
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Location</label>
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Location</label>
             <LocationSearch value={location} onChange={setLocation} />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Description</label>
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Description</label>
             <textarea placeholder="Add description" value={description} onChange={(e) => setDescription(e.target.value)}
-              rows={2} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+              rows={2} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none dark:bg-gray-800 dark:text-gray-100" />
           </div>
 
           {/* Guests */}
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Guests</label>
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Guests</label>
             <AttendeesField value={attendees} onChange={setAttendees} />
           </div>
 
           {/* Repeat — hidden when editing only this occurrence */}
           {editScope !== 'this' && (
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Repeat</label>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Repeat</label>
               <select value={rrule} onChange={(e) => setRrule(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100">
                 <option value="">Does not repeat</option>
                 <option value="FREQ=DAILY">Daily</option>
                 <option value="FREQ=WEEKLY">Weekly</option>
@@ -346,9 +346,9 @@ export default function EventModal({ event, defaultStart, defaultEnd, defaultAll
 
           {/* Reminder */}
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Reminder</label>
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Reminder</label>
             <select value={reminder} onChange={(e) => setReminder(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100">
               {REMINDER_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
@@ -362,9 +362,9 @@ export default function EventModal({ event, defaultStart, defaultEnd, defaultAll
           {/* Read-only events (external subscriptions) get a single Close action */}
           {readOnly ? (
             <div className="flex items-center gap-3 pt-1 pb-1">
-              <p className="flex-1 text-xs text-gray-400">This event is from a subscribed calendar and can't be edited here.</p>
+              <p className="flex-1 text-xs text-gray-400 dark:text-gray-400">This event is from a subscribed calendar and can't be edited here.</p>
               <button type="button" onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">
                 Close
               </button>
             </div>
@@ -378,14 +378,14 @@ export default function EventModal({ event, defaultStart, defaultEnd, defaultAll
             {!isNew && onCopy && event && (
               <button type="button" title="Copy event (paste with Ctrl/Cmd-V on a date)"
                 onClick={() => { onCopy(event); onClose() }}
-                className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors">
+                className="px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-200 font-medium transition-colors">
                 Copy
               </button>
             )}
             {!isNew && onDuplicate && event && (
               <button type="button" title="Duplicate event"
                 onClick={() => { onDuplicate(event); onClose() }}
-                className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors">
+                className="px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-200 font-medium transition-colors">
                 Duplicate
               </button>
             )}

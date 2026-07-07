@@ -19,7 +19,7 @@ const SHORTCUTS: { keys: string[]; label: string }[] = [
 
 function Key({ children }: { children: string }) {
   return (
-    <kbd className="inline-flex items-center justify-center min-w-[1.5rem] px-1.5 py-0.5 text-xs font-mono font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded shadow-sm">
+    <kbd className="inline-flex items-center justify-center min-w-[1.5rem] px-1.5 py-0.5 text-xs font-mono font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded shadow-sm">
       {children}
     </kbd>
   )
@@ -28,19 +28,19 @@ function Key({ children }: { children: string }) {
 export default function ShortcutsHelp({ onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-gray-800">Keyboard shortcuts</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-sm mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+          <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100">Keyboard shortcuts</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-200 text-xl leading-none">×</button>
         </div>
         <ul className="px-6 py-4 space-y-2.5">
           {SHORTCUTS.map((s) => (
             <li key={s.label} className="flex items-center justify-between">
-              <span className="text-sm text-gray-700">{s.label}</span>
+              <span className="text-sm text-gray-700 dark:text-gray-300">{s.label}</span>
               <span className="flex items-center gap-1">
                 {s.keys.map((k, i) => (
                   <span key={k} className="flex items-center gap-1">
-                    {i > 0 && <span className="text-xs text-gray-400">or</span>}
+                    {i > 0 && <span className="text-xs text-gray-400 dark:text-gray-400">or</span>}
                     <Key>{k}</Key>
                   </span>
                 ))}
