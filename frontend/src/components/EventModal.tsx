@@ -42,6 +42,7 @@ function toDateValue(date: Date): string {
 
 export default function EventModal({ event, defaultStart, defaultEnd, defaultAllDay = false, prefill, editScope, calendars, onSave, onDelete, onDuplicate, onCopy, onClose }: Props) {
   const isNew = event === null
+  const readOnly = !!event?.readOnly   // external subscription events — view only
   const writableCalendars = calendars.filter((c) => c.canWrite)
 
   const [title, setTitle] = useState('')
@@ -105,7 +106,7 @@ export default function EventModal({ event, defaultStart, defaultEnd, defaultAll
   // Debounced; timed events only; the event being edited is excluded so it doesn't
   // flag itself. Best-effort — failures (e.g. a calendar not supporting free-busy) are silent.
   useEffect(() => {
-    if (allDay || !start || !end) { setConflicts([]); return }
+    if (readOnly || allDay || !start || !end) { setConflicts([]); return }
     const startDate = new Date(start)
     const endDate = new Date(end)
     if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || endDate <= startDate) {
@@ -229,7 +230,7 @@ export default function EventModal({ event, defaultStart, defaultEnd, defaultAll
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
           <div>
-            <h2 className="text-base font-semibold text-gray-800">{isNew ? 'New event' : 'Edit event'}</h2>
+            <h2 className="text-base font-semibold text-gray-800">{readOnly ? 'Event details' : isNew ? 'New event' : 'Edit event'}</h2>
             {editScope && (
               <p className="text-xs text-gray-400 mt-0.5">
                 {editScope === 'this' && 'This occurrence only'}
@@ -242,6 +243,9 @@ export default function EventModal({ event, defaultStart, defaultEnd, defaultAll
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4 max-h-[80vh] overflow-y-auto">
+          {/* All fields are disabled for read-only (external) events; the fieldset cascades
+              disabled to every contained control. Action buttons live outside it below. */}
+          <fieldset disabled={readOnly} className="space-y-4 border-0 p-0 m-0 disabled:opacity-100">
           {/* Title */}
           <input
             type="text"
@@ -351,9 +355,21 @@ export default function EventModal({ event, defaultStart, defaultEnd, defaultAll
             </select>
           </div>
 
+          </fieldset>
+
           {error && <p className="text-sm text-red-600">{error}</p>}
 
-          {/* Actions */}
+          {/* Read-only events (external subscriptions) get a single Close action */}
+          {readOnly ? (
+            <div className="flex items-center gap-3 pt-1 pb-1">
+              <p className="flex-1 text-xs text-gray-400">This event is from a subscribed calendar and can't be edited here.</p>
+              <button type="button" onClick={onClose}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                Close
+              </button>
+            </div>
+          ) : (
+          /* Actions */
           <div className="flex items-center gap-3 pt-1 pb-1">
             <button type="submit" disabled={saving}
               className="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors">
@@ -387,6 +403,7 @@ export default function EventModal({ event, defaultStart, defaultEnd, defaultAll
               )
             )}
           </div>
+          )}
         </form>
       </div>
     </div>

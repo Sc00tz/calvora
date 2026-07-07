@@ -308,16 +308,20 @@ export default function CalendarView({ visibleCalendars, birthdayContacts, onCli
 
 
       const eventInputs: EventInput[] = allEventResults.map(({ event: e, cal, isExternal }) => {
-        if (!isExternal) eventMapRef.current.set(e.uid, e)
+        // External events share the map so they're clickable, but under a collision-safe id
+        // (external feeds can reuse UIDs across calendars) and flagged read-only so the
+        // modal opens in view-only mode.
+        const id = isExternal ? `ext:${cal.url}:${e.uid}` : e.uid
+        eventMapRef.current.set(id, isExternal ? { ...e, readOnly: true } : e)
         return {
-          id: e.uid,
+          id,
           title: e.title,
           start: e.start,
           end: e.end,
           allDay: e.allDay,
           backgroundColor: cal.color,
           borderColor: cal.color,
-          editable: !isExternal, // external calendars are read-only
+          editable: !isExternal, // external calendars are read-only (no drag/resize)
         }
       })
 

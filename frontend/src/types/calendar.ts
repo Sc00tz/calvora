@@ -62,6 +62,7 @@ export interface CalendarEvent {
   reminder?: number     // minutes before; undefined = no reminder
   attendees?: Attendee[]
   organizer?: string
+  readOnly?: boolean    // true for external (subscription) events — viewable but not editable
   etag?: string
   // Recurring event occurrence fields (set by server-side expansion)
   isOccurrence?: boolean
