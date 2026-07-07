@@ -94,6 +94,9 @@ export const getSubscriptions = () =>
 export const createSubscription = (body: { url: string; name: string; color: string }) =>
   api.post<CalendarInfo>('/subscriptions', body).then((r) => r.data)
 
+export const updateSubscriptionColor = (id: string, color: string) =>
+  api.patch(`/subscriptions/${id}`, { color }).then((r) => r.data)
+
 export const deleteSubscription = (id: string) =>
   api.delete(`/subscriptions/${id}`).then((r) => r.data)
 

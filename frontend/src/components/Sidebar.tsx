@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { useState, useRef } from 'react'
-import { logout as apiLogout } from '../api/client'
+import { logout as apiLogout, updateSubscriptionColor } from '../api/client'
 import type { CalendarInfo, User, AddressBook } from '../types/calendar'
 
 async function setCalendarColor(calendarUrl: string, color: string) {
@@ -240,17 +240,35 @@ function CalendarItem({ calendar, visible, failed, onToggle, onColorChange, onDe
 
 
   const [saving, setSaving] = useState(false)
+  const [showUrl, setShowUrl] = useState(false)
+  const [copied, setCopied] = useState(false)
   const colorInputRef = useRef<HTMLInputElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Debounce the PROPPATCH — color input fires on every drag pixel
+  async function copyUrl() {
+    try {
+      await navigator.clipboard.writeText(calendar.url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch {
+      // Clipboard API unavailable (e.g. non-HTTPS context) — the URL is still shown for manual copy.
+    }
+  }
+
+  // Debounce the color write — the color input fires on every drag pixel.
+  // Subscriptions store their color in subscriptions.json (PATCH /api/subscriptions);
+  // Davis calendars store it on the server via PROPPATCH.
   function handleColorChange(e: React.ChangeEvent<HTMLInputElement>) {
     const color = e.target.value
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(async () => {
       setSaving(true)
       try {
-        await setCalendarColor(calendar.url, color)
+        if (calendar.isExternal) {
+          await updateSubscriptionColor(calendar.id, color)
+        } else {
+          await setCalendarColor(calendar.url, color)
+        }
         onColorChange(color)
       } catch (err) {
         console.error('Failed to update calendar color:', err)
@@ -261,7 +279,7 @@ function CalendarItem({ calendar, visible, failed, onToggle, onColorChange, onDe
   }
 
   return (
-    <li className={`flex items-center gap-1 group rounded-lg ${isShared ? 'bg-gray-50' : ''}`}>
+    <li className={`relative flex items-center gap-1 group rounded-lg ${isShared ? 'bg-gray-50' : ''}`}>
       {/* Toggle + label */}
       <button
         onClick={onToggle}
@@ -299,8 +317,9 @@ function CalendarItem({ calendar, visible, failed, onToggle, onColorChange, onDe
         )}
       </button>
 
-      {/* Color picker — only for own (non-shared) calendars */}
-      {!isShared && (
+      {/* Color picker — own Davis calendars and iCal subscriptions (both store a color).
+          Shared read-only Davis calendars are excluded. */}
+      {(!isShared || calendar.isExternal) && (
         <div className="relative flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity pr-1">
           <button
             type="button"
@@ -320,6 +339,19 @@ function CalendarItem({ calendar, visible, failed, onToggle, onColorChange, onDe
         </div>
       )}
 
+      {/* Show subscription URL — only for external */}
+      {calendar.isExternal && (
+        <button
+          title="Show feed URL"
+          onClick={(e) => { e.stopPropagation(); setShowUrl((v) => !v) }}
+          className="flex-shrink-0 opacity-60 group-hover:opacity-100 p-1 text-gray-400 hover:text-gray-700 transition-all"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </button>
+      )}
+
       {/* Delete subscription — only for external */}
       {onDelete && (
         <button
@@ -331,6 +363,23 @@ function CalendarItem({ calendar, visible, failed, onToggle, onColorChange, onDe
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
           </svg>
         </button>
+      )}
+
+      {/* Feed URL popover */}
+      {showUrl && calendar.isExternal && (
+        <div className="absolute left-2 right-2 top-full mt-1 z-20 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
+          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Feed URL</p>
+          <div className="flex items-start gap-1.5">
+            <span className="flex-1 text-[11px] text-gray-600 break-all leading-snug">{calendar.url}</span>
+            <button
+              onClick={(e) => { e.stopPropagation(); copyUrl() }}
+              title="Copy URL"
+              className="flex-shrink-0 text-[10px] font-medium text-blue-600 hover:text-blue-800 px-1.5 py-0.5 rounded"
+            >
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+          </div>
+        </div>
       )}
     </li>
 

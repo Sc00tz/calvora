@@ -12,6 +12,13 @@ const router = Router();
 const DATA_DIR = path.join(process.cwd(), 'data');
 const SUBS_FILE = path.join(DATA_DIR, 'subscriptions.json');
 
+// External feeds can be large (megabytes) and slow (several seconds). The frontend
+// re-requests them on every calendar navigation, so we cache each fetched feed briefly
+// in memory to avoid re-downloading on every view change.
+const PROXY_TIMEOUT_MS = 15_000;
+const FEED_CACHE_TTL_MS = 5 * 60_000; // 5 minutes
+const feedCache = new Map<string, { data: string; fetchedAt: number }>();
+
 async function getSubscriptions(): Promise<any[]> {
   try {
     const data = await fs.readFile(SUBS_FILE, 'utf-8');
@@ -63,6 +70,21 @@ router.post('/', requireSession, async (req: Request, res: Response) => {
   subs.push(newSub);
   await saveSubscriptions(subs);
   res.json(newSub);
+});
+
+// PATCH /api/subscriptions/:id  body: { color }
+router.patch('/:id', requireSession, async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { color } = req.body as { color?: string };
+  if (!color || !/^#[0-9A-Fa-f]{6}$/.test(color)) {
+    return res.status(400).json({ error: 'color must be a 6-digit hex value like #FF0000' });
+  }
+  const subs = await getSubscriptions();
+  const sub = subs.find(s => s.id === id);
+  if (!sub) return res.status(404).json({ error: 'Subscription not found' });
+  sub.color = color;
+  await saveSubscriptions(subs);
+  return res.json({ ok: true });
 });
 
 // DELETE /api/subscriptions/:id
@@ -136,6 +158,14 @@ router.get('/proxy', requireSession, async (req: Request, res: Response) => {
     return res.status(400).json({ error: 'url is required' });
   }
 
+  // Serve from cache if fresh — avoids re-downloading large/slow feeds on every navigation.
+  const cached = feedCache.get(url);
+  if (cached && Date.now() - cached.fetchedAt < FEED_CACHE_TTL_MS) {
+    res.setHeader('Content-Type', 'text/calendar');
+    res.send(cached.data);
+    return;
+  }
+
   try {
     await assertSafeProxyUrl(url);
   } catch (err: any) {
@@ -150,7 +180,7 @@ router.get('/proxy', requireSession, async (req: Request, res: Response) => {
     let fetchRes: globalThis.Response | undefined;
     for (let hop = 0; hop < 5; hop++) {
       fetchRes = await fetch(current, {
-        signal: AbortSignal.timeout(5000),
+        signal: AbortSignal.timeout(PROXY_TIMEOUT_MS),
         redirect: 'manual',
       });
       if (fetchRes.status >= 300 && fetchRes.status < 400) {
@@ -167,6 +197,7 @@ router.get('/proxy', requireSession, async (req: Request, res: Response) => {
       throw new Error(`External server responded with ${fetchRes?.status ?? 'no response'}`);
     }
     const data = await fetchRes.text();
+    feedCache.set(url, { data, fetchedAt: Date.now() });
     res.setHeader('Content-Type', 'text/calendar');
     res.send(data);
   } catch (err: any) {
