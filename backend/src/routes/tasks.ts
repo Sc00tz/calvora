@@ -2,9 +2,11 @@
 import { Router, Request, Response } from 'express';
 import { fetchTasks, createTask, updateTask, deleteTask } from '../services/caldav.js';
 import { requireSession } from '../middleware/session.js';
+import { cached, invalidateUser } from '../services/responseCache.js';
 import { CreateTaskBody, UpdateTaskBody } from '../types/index.js';
 
 const router = Router();
+const TASKS_TTL_MS = 30_000;
 
 // GET /api/tasks?calendarUrl=...
 router.get('/', requireSession, async (req: Request, res: Response) => {
@@ -17,7 +19,8 @@ router.get('/', requireSession, async (req: Request, res: Response) => {
   }
 
   try {
-    const tasks = await fetchTasks(username!, password!, davisBaseUrl!, calendarUrl);
+    const tasks = await cached(username!, `tasks:${calendarUrl}`,
+      () => fetchTasks(username!, password!, davisBaseUrl!, calendarUrl), TASKS_TTL_MS);
     res.json(tasks);
   } catch (err: any) {
     console.error('Failed to fetch tasks:', err?.message || err);
@@ -37,6 +40,7 @@ router.post('/', requireSession, async (req: Request, res: Response) => {
 
   try {
     const task = await createTask(username!, password!, davisBaseUrl!, body);
+    invalidateUser(username!);
     res.status(201).json(task);
   } catch (err: any) {
     console.error('Failed to create task:', err?.message || err);
@@ -57,6 +61,7 @@ router.put('/:uid', requireSession, async (req: Request, res: Response) => {
 
   try {
     await updateTask(username!, password!, davisBaseUrl!, body);
+    invalidateUser(username!);
     res.json({ ok: true });
   } catch (err: any) {
     console.error('Failed to update task:', err?.message || err);
@@ -76,6 +81,7 @@ router.delete('/:uid', requireSession, async (req: Request, res: Response) => {
 
   try {
     await deleteTask(username!, password!, davisBaseUrl!, taskUrl, etag);
+    invalidateUser(username!);
     res.json({ ok: true });
   } catch (err: any) {
     console.error('Failed to delete task:', err?.message || err);

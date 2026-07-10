@@ -2,9 +2,13 @@
 import { Router, Request, Response } from 'express';
 import { fetchEvents, createEvent, updateEvent, deleteEvent, searchEvents, getFreeBusy } from '../services/caldav.js';
 import { requireSession } from '../middleware/session.js';
+import { cached, invalidateUser } from '../services/responseCache.js';
 import { CreateEventBody, UpdateEventBody } from '../types/index.js';
 
 const router = Router();
+// Short TTL: long enough to absorb the initial per-calendar burst, re-navigation, and the
+// 60s notification poll, short enough that external edits (phone/DAVx5) surface quickly.
+const EVENTS_TTL_MS = 30_000;
 
 // GET /api/events/search?q=...&calendarUrl=url1&calendarUrl=url2
 router.get('/search', requireSession, async (req: Request, res: Response) => {
@@ -69,7 +73,8 @@ router.get('/', requireSession, async (req: Request, res: Response) => {
   }
 
   try {
-    const events = await fetchEvents(username!, password!, davisBaseUrl!, calendarUrl, startDate, endDate);
+    const events = await cached(username!, `events:${calendarUrl}:${start}:${end}`,
+      () => fetchEvents(username!, password!, davisBaseUrl!, calendarUrl, startDate, endDate), EVENTS_TTL_MS);
     res.json(events);
   } catch (err: any) {
     console.error('Failed to fetch events:', err?.message || err);
@@ -89,6 +94,7 @@ router.post('/', requireSession, async (req: Request, res: Response) => {
 
   try {
     const event = await createEvent(username!, password!, davisBaseUrl!, body);
+    invalidateUser(username!);
     res.status(201).json(event);
   } catch (err: any) {
     console.error('Failed to create event:', err?.message || err);
@@ -110,6 +116,7 @@ router.put('/:uid', requireSession, async (req: Request, res: Response) => {
 
   try {
     await updateEvent(username!, password!, davisBaseUrl!, body);
+    invalidateUser(username!);
     res.json({ ok: true });
   } catch (err: any) {
     console.error('Failed to update event:', err?.message || err);
@@ -131,6 +138,7 @@ router.delete('/:uid', requireSession, async (req: Request, res: Response) => {
 
   try {
     await deleteEvent(username!, password!, davisBaseUrl!, eventUrl, etag, editScope, occurrenceStart);
+    invalidateUser(username!);
     res.json({ ok: true });
   } catch (err: any) {
     console.error('Failed to delete event:', err?.message || err);

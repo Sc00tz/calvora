@@ -2,13 +2,19 @@
 import { Router, Request, Response } from 'express';
 import { fetchCalendars, updateCalendarColor } from '../services/caldav.js';
 import { requireSession } from '../middleware/session.js';
+import { cached, invalidateUser } from '../services/responseCache.js';
 
 const router = Router();
+
+// The calendar list rarely changes within a session and sits on the render-blocking
+// critical path (it also does per-calendar PROPFINDs), so cache it for 5 minutes.
+const CALENDARS_TTL_MS = 5 * 60_000;
 
 router.get('/', requireSession, async (req: Request, res: Response) => {
   const { username, password, davisBaseUrl } = req.session;
   try {
-    const calendars = await fetchCalendars(username!, password!, davisBaseUrl!);
+    const calendars = await cached(username!, 'calendars',
+      () => fetchCalendars(username!, password!, davisBaseUrl!), CALENDARS_TTL_MS);
     res.json(calendars);
   } catch (err: any) {
     console.error('Failed to fetch calendars:', err?.message || err);
@@ -32,6 +38,7 @@ router.patch('/color', requireSession, async (req: Request, res: Response) => {
 
   try {
     await updateCalendarColor(username!, password!, davisBaseUrl!, calendarUrl, color);
+    invalidateUser(username!); // color changed — drop cached calendar list
     res.json({ ok: true });
   } catch (err: any) {
     console.error('Failed to update calendar color:', err?.message || err);
