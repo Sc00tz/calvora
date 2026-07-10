@@ -364,17 +364,33 @@ export default function CalendarView({ visibleCalendars, birthdayContacts, onCli
   // range escapes what's already loaded (or the calendar set changed). Each fetch costs the
   // same ~fixed overhead regardless of range size, so padding is cheap and makes
   // month↔week↔day switches — which are subsets of the loaded window — instant, no refetch.
-  const WINDOW_PAD_MS = 45 * 24 * 60 * 60 * 1000 // ±45 days around the visible range
+  // Two-phase load: paint the *visible* range first (few events → fast initial render),
+  // then quietly widen to a padded window so later navigation to adjacent periods stays
+  // instant. Rendering cost scales with event count, so we keep the first paint light and
+  // defer the extra events until after it's on screen.
+  const WINDOW_PAD_MS = 45 * 24 * 60 * 60 * 1000 // ±45 days, loaded in the background
   const loadWindow = useCallback((visibleStart: Date, visibleEnd: Date, calendars: CalendarInfo[], force = false) => {
     const key = calendars.map((c) => c.id).sort().join('|')
     const lw = loadedWindowRef.current
     const covered = !force && lw && lw.key === key &&
       visibleStart.getTime() >= lw.start && visibleEnd.getTime() <= lw.end
     if (covered) return // FullCalendar already holds these events and filters per view
+
+    // Phase 1 — render the visible range immediately.
+    loadedWindowRef.current = { start: visibleStart.getTime(), end: visibleEnd.getTime(), key }
+    loadEvents(visibleStart, visibleEnd, calendars)
+
+    // Phase 2 — after the first paint, widen the loaded window in the background so
+    // switching/navigating within ±45 days needs no refetch. Skipped if the set changed
+    // again in the meantime.
     const winStart = new Date(visibleStart.getTime() - WINDOW_PAD_MS)
     const winEnd = new Date(visibleEnd.getTime() + WINDOW_PAD_MS)
-    loadedWindowRef.current = { start: winStart.getTime(), end: winEnd.getTime(), key }
-    loadEvents(winStart, winEnd, calendars)
+    setTimeout(() => {
+      const cur = loadedWindowRef.current
+      if (!cur || cur.key !== key) return
+      loadedWindowRef.current = { start: winStart.getTime(), end: winEnd.getTime(), key }
+      loadEvents(winStart, winEnd, calendars)
+    }, 400)
   }, [loadEvents, WINDOW_PAD_MS])
 
   useEffect(() => {
