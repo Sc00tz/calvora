@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-import { createDAVClient, DAVAddressBook } from 'tsdav';
+import { DAVAddressBook } from 'tsdav';
 import { v4 as uuidv4 } from 'uuid';
 import { AddressBook, Contact, CreateContactBody, UpdateContactBody } from '../types/index.js';
 import ICAL from 'ical.js';
-
-type DAVClientInstance = Awaited<ReturnType<typeof createDAVClient>>;
+import { getDAVClient, DAVClientInstance } from './davClient.js';
 
 interface ParsedVCard extends Contact {
   isGroup?: boolean;
@@ -12,12 +11,7 @@ interface ParsedVCard extends Contact {
 }
 
 async function createCardClient(username: string, password: string, baseUrl: string): Promise<DAVClientInstance> {
-  return createDAVClient({
-    serverUrl: baseUrl,
-    credentials: { username, password },
-    authMethod: 'Basic',
-    defaultAccountType: 'carddav',
-  });
+  return getDAVClient(username, password, baseUrl, 'carddav');
 }
 
 export async function fetchAddressBooks(username: string, password: string, baseUrl: string): Promise<AddressBook[]> {

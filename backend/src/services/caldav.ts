@@ -1,19 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-import { createDAVClient, DAVCalendar, DAVCalendarObject } from 'tsdav';
+import { DAVCalendar, DAVCalendarObject } from 'tsdav';
 import ICAL from 'ical.js';
 import { v4 as uuidv4 } from 'uuid';
 import { CalendarInfo, CalendarEvent, CreateEventBody, UpdateEventBody, CalendarTask, CreateTaskBody, UpdateTaskBody, Attendee } from '../types/index.js';
 import { getTimezone, getVtimezoneText, utcIsoToZonedTime } from './timezone.js';
-
-type DAVClientInstance = Awaited<ReturnType<typeof createDAVClient>>;
+import { getDAVClient, DAVClientInstance } from './davClient.js';
 
 async function createClient(username: string, password: string, baseUrl: string): Promise<DAVClientInstance> {
-  return createDAVClient({
-    serverUrl: baseUrl,
-    credentials: { username, password },
-    authMethod: 'Basic',
-    defaultAccountType: 'caldav',
-  });
+  return getDAVClient(username, password, baseUrl, 'caldav');
 }
 
 export async function verifyCredentials(username: string, password: string, baseUrl: string): Promise<boolean> {

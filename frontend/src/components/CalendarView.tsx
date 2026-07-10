@@ -7,7 +7,7 @@ import listPlugin from '@fullcalendar/list'
 import interactionPlugin, { DateClickArg, EventResizeDoneArg } from '@fullcalendar/interaction'
 import type { EventDropArg } from '@fullcalendar/core'
 import type { EventClickArg, EventInput, DatesSetArg } from '@fullcalendar/core'
-import { getEvents, getTasks, updateEvent, searchEvents } from '../api/client'
+import { getEvents, getTasks, updateEvent, searchEvents, getExternalIcal } from '../api/client'
 import PrintDialog from './PrintDialog'
 import type { CalendarInfo, CalendarEvent, CalendarTask, Contact, UpdateEventBody, CalendarHandle, CalendarViewName } from '../types/calendar'
 
@@ -36,6 +36,9 @@ export default function CalendarView({ visibleCalendars, birthdayContacts, onCli
   // Backoff state for external feeds: after repeated failures we stop re-fetching a
   // feed on every view change, retrying only once its cooldown has elapsed. Keyed by URL.
   const feedBackoffRef = useRef<Map<string, { failures: number; nextTryAt: number }>>(new Map())
+  // Tracks the padded window currently loaded into FullCalendar, so we can skip refetching
+  // when a view/navigation change stays within it. Keyed by the visible-calendar id set.
+  const loadedWindowRef = useRef<{ start: number; end: number; key: string } | null>(null)
   const [fcEvents, setFcEvents] = useState<EventInput[]>([])
   const [dateRange, setDateRange] = useState<{ start: Date; end: Date } | null>(null)
   const [printDialogOpen, setPrintDialogOpen] = useState(false)
@@ -162,7 +165,6 @@ export default function CalendarView({ visibleCalendars, birthdayContacts, onCli
               return []
             }
             try {
-              const { getExternalIcal } = await import('../api/client')
               // @ts-ignore
               const ICAL = (await import('ical.js')).default
               const icsData = await getExternalIcal(cal.url)
@@ -358,18 +360,36 @@ export default function CalendarView({ visibleCalendars, birthdayContacts, onCli
     }
   }, [birthdayContacts, onSubscriptionErrors])
 
+  // Load a window padded well beyond the visible range, and only refetch when the visible
+  // range escapes what's already loaded (or the calendar set changed). Each fetch costs the
+  // same ~fixed overhead regardless of range size, so padding is cheap and makes
+  // month↔week↔day switches — which are subsets of the loaded window — instant, no refetch.
+  const WINDOW_PAD_MS = 45 * 24 * 60 * 60 * 1000 // ±45 days around the visible range
+  const loadWindow = useCallback((visibleStart: Date, visibleEnd: Date, calendars: CalendarInfo[], force = false) => {
+    const key = calendars.map((c) => c.id).sort().join('|')
+    const lw = loadedWindowRef.current
+    const covered = !force && lw && lw.key === key &&
+      visibleStart.getTime() >= lw.start && visibleEnd.getTime() <= lw.end
+    if (covered) return // FullCalendar already holds these events and filters per view
+    const winStart = new Date(visibleStart.getTime() - WINDOW_PAD_MS)
+    const winEnd = new Date(visibleEnd.getTime() + WINDOW_PAD_MS)
+    loadedWindowRef.current = { start: winStart.getTime(), end: winEnd.getTime(), key }
+    loadEvents(winStart, winEnd, calendars)
+  }, [loadEvents, WINDOW_PAD_MS])
+
   useEffect(() => {
-    if (dateRange) loadEvents(dateRange.start, dateRange.end, visibleCalendars)
-  }, [visibleCalendars, dateRange, loadEvents])
+    if (dateRange) loadWindow(dateRange.start, dateRange.end, visibleCalendars)
+  }, [visibleCalendars, dateRange, loadWindow])
 
   // Expose handles to parent
   useEffect(() => {
     calendarRef.current = {
-      refetchEvents: () => dateRange && loadEvents(dateRange.start, dateRange.end, visibleCalendars),
+      // Mutations force a reload of the current window (bypasses the coverage cache).
+      refetchEvents: () => dateRange && loadWindow(dateRange.start, dateRange.end, visibleCalendars, true),
       navigateTo: (date: Date) => fcRef.current?.getApi().gotoDate(date),
       addOptimisticEvent: (event: CalendarEvent) => {
         optimisticRef.current.set(event.uid, event)
-        if (dateRange) loadEvents(dateRange.start, dateRange.end, visibleCalendars)
+        if (dateRange) loadWindow(dateRange.start, dateRange.end, visibleCalendars, true)
       },
       changeView: (view: CalendarViewName) => fcRef.current?.getApi().changeView(view),
       gotoToday: () => fcRef.current?.getApi().today(),

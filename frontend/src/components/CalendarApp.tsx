@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useCalendars } from '../hooks/useCalendars'
 import { createEvent, updateEvent, deleteEvent, createTask, updateTask, deleteTask, createContact, updateContact, deleteContact } from '../api/client'
 import Layout from './Layout'
@@ -94,8 +94,16 @@ export default function CalendarApp({ user, onLogout, theme, onToggleTheme }: Pr
 
   useEffect(() => { refreshBirthdayContacts() }, [refreshBirthdayContacts])
 
-  const visibleCalendars = calendars.filter((c) => visibleCalendarIds.has(c.id))
-  const taskCalendars    = calendars.filter((c) => c.supportsTasks)
+  // Memoize so the array reference stays stable across renders when the underlying set
+  // hasn't changed — otherwise CalendarView's loadEvents effect refetches on every render.
+  const visibleCalendars = useMemo(
+    () => calendars.filter((c) => visibleCalendarIds.has(c.id)),
+    [calendars, visibleCalendarIds]
+  )
+  const taskCalendars = useMemo(
+    () => calendars.filter((c) => c.supportsTasks),
+    [calendars]
+  )
 
   function handleToggleCalendar(id: string) {
     setVisibleCalendarIds((prev) => {
